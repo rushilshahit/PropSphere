@@ -1,0 +1,67 @@
+# .claudeignore
+# Files and directories Claude should not read or include in context
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+.turbo/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Supabase local data
+supabase/.branches/
+supabase/.temp/
+supabase/functions/.deploy/
+
+# Large auto-generated files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Database dumps and seeds (large data files)
+scripts/seeds/*.json
+scripts/dumps/
+
+# Test coverage reports
+coverage/
+
+# Logs
+*.log
+logs/
+
+# OS and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Cache
+.cache/
+.eslintcache
+.tsbuildinfo
+*.tsbuildinfo
+
+# Media assets (binary, not useful as context)
+public/images/
+src/assets/images/
+
+# Generated type files
+supabase/functions/_shared/
+apps/api/src/database/generated-types.ts
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+
+# Sentry source maps
+.sentryclirc

@@ -1,0 +1,14 @@
+export const configuration = () => ({
+  port: parseInt(process.env['PORT'] ?? '3001', 10),
+  nodeEnv: process.env['NODE_ENV'] ?? 'development',
+  supabase: {
+    url: process.env['SUPABASE_URL'] ?? '',
+    serviceKey: process.env['SUPABASE_SERVICE_KEY'] ?? '',
+  },
+  redis: {
+    url: process.env['REDIS_URL'] ?? 'redis://localhost:6379',
+  },
+  resend: {
+    apiKey: process.env['RESEND_API_KEY'] ?? '',
+  },
+});
