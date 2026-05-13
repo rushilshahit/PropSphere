@@ -19,6 +19,7 @@
     "@reduxjs/toolkit": "^2.2.0",
     "@supabase/supabase-js": "^2.43.0",
     "@tanstack/react-query": "^5.45.0",
+    "@vis.gl/react-google-maps": "^1.8.3",
     "ical-generator": "^10.2.0",
     "lucide-react": "^0.395.0",
     "mapbox-gl": "^2",

@@ -67,11 +67,10 @@ export class CollectionsController {
   }
 
   @Post(':id/properties')
-  @UsePipes(new ZodValidationPipe(addPropertySchema))
   addProperty(
     @Req() req: AuthRequest,
     @Param('id') id: string,
-    @Body() dto: AddPropertyDto,
+    @Body(new ZodValidationPipe(addPropertySchema)) dto: AddPropertyDto,
   ) {
     return this.collectionsService.addPropertyToCollection(req.user.id, id, dto);
   }
@@ -92,8 +91,7 @@ export class SharedCollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}
 
   @Get(':token')
-  async getShared(@Param('token') token: string) {
-    const data = await this.collectionsService.getSharedCollection(token);
-    return { data };
+  getShared(@Param('token') token: string) {
+    return this.collectionsService.getSharedCollection(token);
   }
 }

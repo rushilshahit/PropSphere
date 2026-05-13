@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import type { ListingType } from '@propsphere/types';
 import { usePropertySearch } from '@/api/properties';
@@ -29,7 +29,8 @@ function PropertyCardSkeleton() {
 
 export function SearchResultsPage() {
   const dispatch = useDispatch();
-  const { listingType: routeListingType } = useParams<{ listingType?: string }>();
+  const { pathname } = useLocation();
+  const routeListingType = pathname.slice(1); // '/buy' → 'buy', '/rent' → 'rent', etc.
   const filters = useSelector(selectSearchFilters);
   const { isAuthenticated } = useAuth();
   const [showMobileFilters, setShowMobileFilters] = useState(false);

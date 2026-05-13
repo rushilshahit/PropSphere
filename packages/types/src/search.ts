@@ -3,6 +3,8 @@ import type { ListingType, PropertyType } from './property';
 export interface SearchFilters {
   listingType: ListingType;
   query: string;
+  locationLat?: number;
+  locationLng?: number;
   priceMin?: number;
   priceMax?: number;
   bedrooms?: number;

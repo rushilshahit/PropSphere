@@ -24,13 +24,14 @@ export function useAuth() {
   const loading = useAppSelector(selectAuthLoading);
   const initialized = useAppSelector(selectAuthInitialized);
 
-  function signOut() {
-    dispatch(setUser(null));
+  async function signOut() {
+    // scope: 'local' clears localStorage without a network call — fast and reliable
+    await supabase.auth.signOut();
     dispatch(setSession(null));
+    dispatch(setUser(null));
     dispatch(setSavedIds([]));
     queryClient.clear();
     navigate('/');
-    void supabase.auth.signOut();
   }
 
   return { user, session, isAuthenticated, isAgent, loading, initialized, signOut };

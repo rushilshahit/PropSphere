@@ -4,8 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X } from 'lucide-react';
+import { X, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+
+const ADMIN_URL = (import.meta.env.VITE_ADMIN_URL as string | undefined) ?? 'http://localhost:3002';
+import { useAppDispatch } from '@/store/hooks';
+import { setSession } from '@/features/auth/store/authSlice';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -54,6 +58,7 @@ function GoogleIcon() {
 
 export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps) {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [mode, setMode] = useState(initialMode);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -81,7 +86,7 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
   async function handleLogin(values: LoginForm) {
     setApiError(null);
     setLoginLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: values.email,
       password: values.password,
     });
@@ -89,6 +94,9 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
     if (error) {
       setApiError(error.message);
       return;
+    }
+    if (data.session) {
+      dispatch(setSession(data.session));
     }
     onClose();
     navigate('/');
@@ -116,7 +124,11 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
       });
     }
     toast('Welcome to PropSphere!', 'success');
+    if (data.session) {
+      dispatch(setSession(data.session));
+    }
     onClose();
+    navigate('/');
   }
 
   async function handleGoogleOAuth() {
@@ -270,6 +282,20 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
               </>
             )}
           </p>
+
+          {mode === 'login' && (
+            <div className="mt-6 pt-5 border-t border-neutral-100 flex justify-center">
+              <a
+                href={ADMIN_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Admin Portal
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>,

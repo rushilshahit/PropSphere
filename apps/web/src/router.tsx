@@ -21,6 +21,10 @@ const SavedSearchesPage = lazy(() =>
   import('./features/alerts/pages/SavedSearchesPage'),
 );
 
+const FinancePage = lazy(() => import('./features/finance/pages/FinancePage'));
+
+const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
+
 function StubPage({ label }: { label: string }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 text-center text-neutral-400">
@@ -117,8 +121,23 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'suburb/:state/:slug', element: <StubPage label="Suburb Profile" /> },
+      {
+        path: 'agents',
+        element: (
+          <Suspense fallback={<Loading />}>
+            <AgentsPage />
+          </Suspense>
+        ),
+      },
       { path: 'agent/:slug', element: <StubPage label="Agent Profile" /> },
-      { path: 'finance', element: <StubPage label="Finance Tools" /> },
+      {
+        path: 'finance',
+        element: (
+          <Suspense fallback={<Loading />}>
+            <FinancePage />
+          </Suspense>
+        ),
+      },
       { path: 'account/*', element: <StubPage label="Account" /> },
       { path: 'dashboard/*', element: <StubPage label="Agent Dashboard" /> },
     ],

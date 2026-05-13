@@ -3,10 +3,18 @@ import { MapPin, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import type { ListingType } from '@propsphere/types';
-import { useSuburbAutocomplete } from '@/api/suburbs';
 import { Tabs } from '@/components/ui';
 import { useDebounce } from '@/hooks/useDebounce';
-import { selectSearchFilters, setListingType, setLocation } from '../store/searchSlice';
+import {
+  selectSearchFilters,
+  setListingType,
+  setLocation,
+  setLocationCoords,
+} from '../store/searchSlice';
+import {
+  useMapboxAutocomplete,
+  type GeocodingFeature,
+} from '../hooks/useMapboxAutocomplete';
 
 const LISTING_TABS = [
   { label: 'Buy', value: 'buy', activeClassName: 'bg-brand-primary text-white' },
@@ -26,14 +34,12 @@ export function SearchBar() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const debouncedInput = useDebounce(inputValue, 300);
-  const { data: suggestions = [] } = useSuburbAutocomplete(debouncedInput);
+  const { data: suggestions = [] } = useMapboxAutocomplete(debouncedInput);
 
-  // Sync external filter changes to local input
   useEffect(() => {
     setInputValue(query);
   }, [query]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (!containerRef.current?.contains(e.target as Node)) {
@@ -44,9 +50,11 @@ export function SearchBar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  function handleSelect(name: string) {
+  function handleSelect(feature: GeocodingFeature) {
+    const name = feature.place_name.split(',')[0];
     setInputValue(name);
     dispatch(setLocation(name));
+    dispatch(setLocationCoords({ lat: feature.center[1], lng: feature.center[0] }));
     setShowDropdown(false);
     setActiveIndex(-1);
   }
@@ -71,7 +79,7 @@ export function SearchBar() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (activeIndex >= 0 && suggestions[activeIndex]) {
-        handleSelect(suggestions[activeIndex].name);
+        handleSelect(suggestions[activeIndex]);
       } else {
         handleSubmit();
       }
@@ -120,30 +128,34 @@ export function SearchBar() {
           </button>
         </div>
 
-        {/* Autocomplete dropdown */}
         {showDropdown && suggestions.length > 0 && (
           <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-card shadow-modal border border-neutral-200 overflow-hidden">
-            {suggestions.map((suburb, idx) => (
-              <button
-                key={suburb.id}
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault(); // prevent input blur
-                  handleSelect(suburb.name);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-50 transition-colors ${
-                  idx === activeIndex ? 'bg-neutral-100' : ''
-                }`}
-              >
-                <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
-                <div>
-                  <span className="text-sm font-medium text-neutral-900">{suburb.name}</span>
-                  <span className="text-xs text-neutral-500 ml-2">
-                    {suburb.state} {suburb.postcode}
-                  </span>
-                </div>
-              </button>
-            ))}
+            {suggestions.map((feature, idx) => {
+              const [primary, ...rest] = feature.place_name.split(',');
+              return (
+                <button
+                  key={feature.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelect(feature);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-50 transition-colors ${
+                    idx === activeIndex ? 'bg-neutral-100' : ''
+                  }`}
+                >
+                  <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-neutral-900">{primary}</span>
+                    {rest.length > 0 && (
+                      <span className="text-xs text-neutral-500 ml-1">
+                        {rest.join(',')}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

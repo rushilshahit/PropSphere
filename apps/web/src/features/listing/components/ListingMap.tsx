@@ -1,71 +1,93 @@
-import { useEffect, useRef, useState } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl';
+import { forwardRef, useEffect, useRef, useState } from 'react';
+import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
+import { MAPBOX_TOKEN } from '@/lib/mapbox';
+import { PropertyHousePin } from './PropertyHousePin';
 
 interface ListingMapProps {
   lat: number;
   lng: number;
   address: string;
+  selectedPin?: { lat: number; lng: number } | null;
 }
 
-export function ListingMap({ lat, lng, address }: ListingMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [mapReady, setMapReady] = useState(false);
-  const [popupOpen, setPopupOpen] = useState(false);
+export const ListingMap = forwardRef<MapRef, ListingMapProps>(
+  ({ lat, lng, selectedPin }, ref) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [inView, setInView] = useState(false);
+    const [layer, setLayer] = useState<'streets' | 'satellite'>('streets');
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setInView(true);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 },
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setMapReady(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={containerRef} className="h-[400px] rounded-card overflow-hidden border border-neutral-200">
-      {mapReady ? (
-        <Map
-          mapboxAccessToken={MAPBOX_TOKEN}
-          initialViewState={{ longitude: lng, latitude: lat, zoom: 14 }}
-          style={{ width: '100%', height: '100%' }}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
-          scrollZoom={false}
-        >
-          <Marker
-            latitude={lat}
-            longitude={lng}
-            anchor="bottom"
-            onClick={() => setPopupOpen(true)}
-          >
-            <div className="w-5 h-5 bg-brand-primary rounded-full border-2 border-white shadow-md cursor-pointer" />
-          </Marker>
-
-          {popupOpen && (
-            <Popup
-              latitude={lat}
-              longitude={lng}
-              offset={14}
-              onClose={() => setPopupOpen(false)}
-              closeOnClick={false}
+    return (
+      <div
+        ref={containerRef}
+        className="relative h-[400px] rounded-card overflow-hidden border border-neutral-200"
+      >
+        {inView ? (
+          <>
+            <Map
+              ref={ref}
+              mapboxAccessToken={MAPBOX_TOKEN}
+              initialViewState={{ longitude: lng, latitude: lat, zoom: 15 }}
+              style={{ width: '100%', height: '100%' }}
+              mapStyle={
+                layer === 'satellite'
+                  ? 'mapbox://styles/mapbox/satellite-streets-v12'
+                  : 'mapbox://styles/mapbox/light-v11'
+              }
+              attributionControl={false}
             >
-              <p className="text-sm font-medium text-neutral-900 max-w-[180px]">{address}</p>
-            </Popup>
-          )}
-        </Map>
-      ) : (
-        <div className="w-full h-full bg-neutral-100 animate-pulse" />
-      )}
-    </div>
-  );
-}
+              <NavigationControl position="bottom-right" showCompass={false} />
+              <PropertyHousePin lat={lat} lng={lng} />
+              {selectedPin && (
+                <Marker
+                  longitude={selectedPin.lng}
+                  latitude={selectedPin.lat}
+                  anchor="center"
+                >
+                  <div className="w-3 h-3 rounded-full bg-teal-600 border-2 border-white shadow" />
+                </Marker>
+              )}
+            </Map>
+
+            <div className="absolute top-3 right-3 z-10 flex rounded overflow-hidden border border-neutral-200 shadow-sm bg-white">
+              {(['streets', 'satellite'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setLayer(mode)}
+                  className={`text-xs px-3 py-1.5 font-medium capitalize transition-colors ${
+                    layer === mode
+                      ? 'bg-brand-primary text-white'
+                      : 'bg-white text-neutral-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full animate-shimmer" />
+        )}
+      </div>
+    );
+  },
+);
+
+ListingMap.displayName = 'ListingMap';

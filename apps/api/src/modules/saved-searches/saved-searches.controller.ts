@@ -19,27 +19,24 @@ export class SavedSearchesController {
   constructor(private readonly savedSearchesService: SavedSearchesService) {}
 
   @Get()
-  async findAll(@Req() req: AuthRequest) {
-    const data = await this.savedSearchesService.findAll(req.user.id);
-    return { data };
+  findAll(@Req() req: AuthRequest) {
+    return this.savedSearchesService.findAll(req.user.id);
   }
 
   @Post()
   @UsePipes(new ZodValidationPipe(CreateSavedSearchSchema))
-  async create(@Req() req: AuthRequest, @Body() dto: CreateSavedSearchDto) {
-    const data = await this.savedSearchesService.create(req.user.id, dto);
-    return { data };
+  create(@Req() req: AuthRequest, @Body() dto: CreateSavedSearchDto) {
+    return this.savedSearchesService.create(req.user.id, dto);
   }
 
   @Patch(':id')
   @UsePipes(new ZodValidationPipe(UpdateSavedSearchSchema))
-  async update(
+  update(
     @Req() req: AuthRequest,
     @Param('id') id: string,
     @Body() dto: UpdateSavedSearchDto,
   ) {
-    const data = await this.savedSearchesService.update(req.user.id, id, dto);
-    return { data };
+    return this.savedSearchesService.update(req.user.id, id, dto);
   }
 
   @Delete(':id')

@@ -33,9 +33,9 @@ export class PropertiesService {
     }
     if (dto.priceMin !== undefined) query = query.gte('price', dto.priceMin);
     if (dto.priceMax !== undefined) query = query.lte('price', dto.priceMax);
-    if (dto.bedrooms !== undefined) query = query.gte('bedrooms', dto.bedrooms);
-    if (dto.bathrooms !== undefined) query = query.gte('bathrooms', dto.bathrooms);
-    if (dto.carSpaces !== undefined) query = query.gte('car_spaces', dto.carSpaces);
+    if (dto.bedrooms !== undefined) query = query.eq('bedrooms', dto.bedrooms);
+    if (dto.bathrooms !== undefined) query = query.eq('bathrooms', dto.bathrooms);
+    if (dto.carSpaces !== undefined) query = query.eq('car_spaces', dto.carSpaces);
     if (dto.propertyTypes) {
       const types = dto.propertyTypes.split(',').filter(Boolean);
       if (types.length) query = query.in('property_type', types);

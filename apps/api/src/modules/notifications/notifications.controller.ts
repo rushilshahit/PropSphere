@@ -12,9 +12,8 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  async findAll(@Req() req: AuthRequest) {
-    const data = await this.notificationsService.findAll(req.user.id);
-    return { data };
+  findAll(@Req() req: AuthRequest) {
+    return this.notificationsService.findAll(req.user.id);
   }
 
   @Patch(':id/read')

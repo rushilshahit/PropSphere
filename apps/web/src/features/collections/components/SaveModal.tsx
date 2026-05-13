@@ -24,6 +24,7 @@ export function SaveModal({ propertyId, isOpen, onClose }: SaveModalProps) {
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewInput, setShowNewInput] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -31,19 +32,24 @@ export function SaveModal({ propertyId, isOpen, onClose }: SaveModalProps) {
   const activeCollectionId = selectedCollectionId ?? defaultCollection?.id ?? null;
 
   async function handleSave() {
+    setSaveError(null);
     let collectionId = activeCollectionId;
 
-    if (showNewInput && newCollectionName.trim()) {
-      const newCollection = await createCollection(newCollectionName.trim());
-      collectionId = newCollection.id;
+    try {
+      if (showNewInput && newCollectionName.trim()) {
+        const newCollection = await createCollection(newCollectionName.trim());
+        collectionId = newCollection.id;
+      }
+
+      if (!collectionId) return;
+
+      await saveProperty({ collectionId, propertyId });
+      dispatch(addSavedId(propertyId));
+      toast('Property saved!', 'success');
+      onClose();
+    } catch {
+      setSaveError('Could not save property. Please try again.');
     }
-
-    if (!collectionId) return;
-
-    await saveProperty({ collectionId, propertyId });
-    dispatch(addSavedId(propertyId));
-    toast('Property saved!', 'success');
-    onClose();
   }
 
   return createPortal(
@@ -113,6 +119,10 @@ export function SaveModal({ propertyId, isOpen, onClose }: SaveModalProps) {
                 </button>
               )}
             </div>
+          )}
+
+          {saveError && (
+            <p className="text-sm text-red-500 mb-3">{saveError}</p>
           )}
 
           <div className="flex gap-2">

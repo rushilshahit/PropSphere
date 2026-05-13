@@ -51,11 +51,13 @@ export function useCollectionProperties(collectionId: string | null) {
 export function useSaveProperty() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ collectionId, propertyId, notes }: { collectionId: string; propertyId: string; notes?: string }) =>
-      authFetch(`/api/collections/${collectionId}/properties`, {
+    mutationFn: async ({ collectionId, propertyId, notes }: { collectionId: string; propertyId: string; notes?: string }) => {
+      const res = await authFetch(`/api/collections/${collectionId}/properties`, {
         method: 'POST',
         body: JSON.stringify({ propertyId, notes }),
-      }),
+      });
+      if (!res.ok) throw new Error('Failed to save property');
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['collections'] });
     },

@@ -11,4 +11,7 @@ export const configuration = () => ({
   resend: {
     apiKey: process.env['RESEND_API_KEY'] ?? '',
   },
+  googleMaps: {
+    serverKey: process.env['GOOGLE_MAPS_SERVER_KEY'] ?? '',
+  },
 });

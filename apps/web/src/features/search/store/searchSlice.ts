@@ -37,6 +37,10 @@ const searchSlice = createSlice({
       state.filters.query = action.payload;
       state.filters.page = 1;
     },
+    setLocationCoords(state, action: PayloadAction<{ lat: number; lng: number }>) {
+      state.filters.locationLat = action.payload.lat;
+      state.filters.locationLng = action.payload.lng;
+    },
     setPriceRange(state, action: PayloadAction<{ priceMin?: number; priceMax?: number }>) {
       state.filters.priceMin = action.payload.priceMin;
       state.filters.priceMax = action.payload.priceMax;
@@ -69,6 +73,7 @@ export const {
   resetFilters,
   setListingType,
   setLocation,
+  setLocationCoords,
   setPriceRange,
   setBedrooms,
   setSortBy,

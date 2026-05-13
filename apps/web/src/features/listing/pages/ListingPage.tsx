@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Share2 } from 'lucide-react';
+import type { MapRef } from 'react-map-gl';
 import { formatPrice } from '@propsphere/utils';
 import { useProperty, useIncrementViewCount } from '@/api/properties';
+import type { NearbyPlace } from '@/api/overpass';
 import { Button, Skeleton } from '@/components/ui';
+import { useSaveProperty } from '@/features/collections/hooks/useSaveProperty';
+import { SaveModal } from '@/features/collections/components/SaveModal';
 import { PhotoGallery } from '../components/PhotoGallery';
 import { PropertyStats } from '../components/PropertyStats';
 import { InspectionTimes } from '../components/InspectionTimes';
@@ -13,7 +17,9 @@ import { SoldHistory } from '../components/SoldHistory';
 import { AgentCard } from '../components/AgentCard';
 import { EnquiryModal } from '../components/EnquiryModal';
 import { SimilarProperties } from '../components/SimilarProperties';
-import { ListingMap } from '../components/ListingMap';
+import { StreetView } from '../components/StreetView';
+import { NearbyPlaces } from '../components/NearbyPlaces';
+import { CommuteCalculator } from '../components/CommuteCalculator';
 
 function buildAddress(property: {
   unit_number: string | null;
@@ -62,7 +68,10 @@ export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
+  const mapRef = useRef<MapRef>(null);
 
+  const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(id!);
   const { data: property, isLoading, isError } = useProperty(id!);
   useIncrementViewCount(id!);
 
@@ -88,7 +97,6 @@ export default function ListingPage() {
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Breadcrumb */}
         <Link
           to={`/${property.listing_type}`}
           className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 transition-colors mb-4"
@@ -97,16 +105,12 @@ export default function ListingPage() {
           Back to search
         </Link>
 
-        {/* Gallery */}
         <div className="mb-6">
           <PhotoGallery images={property.images} />
         </div>
 
-        {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
-          {/* Left column */}
           <div className="space-y-6">
-            {/* Address + headline */}
             <div>
               <h1 className="text-2xl font-bold text-neutral-900">{address}</h1>
               {property.headline && (
@@ -134,17 +138,31 @@ export default function ListingPage() {
             <SimilarProperties propertyId={property.id} />
 
             {property.lat != null && property.lng != null && (
-              <div>
-                <h3 className="text-base font-semibold text-neutral-900 mb-3">Location</h3>
-                <ListingMap lat={property.lat} lng={property.lng} address={address} />
-              </div>
+              <section className="space-y-4">
+                <h2 className="text-xl font-bold text-neutral-900">Location</h2>
+                <StreetView
+                  lat={property.lat}
+                  lng={property.lng}
+                  address={address}
+                  mapRef={mapRef}
+                  selectedPin={selectedPlace}
+                />
+                <NearbyPlaces
+                  lat={property.lat}
+                  lng={property.lng}
+                  onPlaceSelect={setSelectedPlace}
+                />
+                <CommuteCalculator
+                  originLat={property.lat}
+                  originLng={property.lng}
+                  mapRef={mapRef}
+                />
+              </section>
             )}
           </div>
 
-          {/* Right column — sticky sidebar */}
           <div className="space-y-4">
             <div className="lg:sticky lg:top-24 space-y-4">
-              {/* Price panel */}
               <div className="bg-white border border-neutral-200 rounded-card p-5">
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <p className="text-3xl font-bold text-neutral-900 tabular-nums">{priceLabel}</p>
@@ -163,9 +181,9 @@ export default function ListingPage() {
                   <Button size="lg" className="w-full" onClick={() => setEnquiryOpen(true)}>
                     Enquire now
                   </Button>
-                  <Button variant="secondary" size="lg" className="w-full">
-                    <Bookmark className="w-4 h-4" />
-                    Save property
+                  <Button variant="secondary" size="lg" className="w-full" onClick={toggle}>
+                    <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+                    {isSaved ? 'Saved' : 'Save property'}
                   </Button>
                   <Button variant="ghost" size="sm" className="w-full">
                     <Share2 className="w-4 h-4" />
@@ -174,7 +192,6 @@ export default function ListingPage() {
                 </div>
               </div>
 
-              {/* Agent card */}
               <AgentCard
                 agent={property.agent}
                 agency={property.agency}
@@ -190,6 +207,11 @@ export default function ListingPage() {
         agentId={property.agent_id}
         isOpen={enquiryOpen}
         onClose={() => setEnquiryOpen(false)}
+      />
+      <SaveModal
+        propertyId={property.id}
+        isOpen={saveModalOpen}
+        onClose={closeSaveModal}
       />
     </>
   );
