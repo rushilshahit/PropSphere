@@ -24,14 +24,30 @@ export class AgentsService {
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
+    // Resolve matching agency IDs first so filtering happens before pagination
+    let agencyIds: string[] | null = null;
+    if (params.suburb) {
+      const { data: agencyRows } = await this.supabase.client
+        .from('agencies')
+        .select('id')
+        .ilike('suburb', `%${params.suburb}%`);
+      agencyIds = (agencyRows ?? []).map((a: { id: string }) => a.id);
+      if (agencyIds.length === 0) {
+        return { items: [], total: 0, page, totalPages: 0 };
+      }
+    }
+
     let query = this.supabase.client
       .from('agents')
       .select('id, profile_id, agency_id, bio, years_active, license_no', { count: 'exact' })
       .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      .order('created_at', { ascending: false });
 
-    const { data, count, error } = await query;
+    if (agencyIds) {
+      query = query.in('agency_id', agencyIds);
+    }
+
+    const { data, count, error } = await query.range(from, to);
     if (error) throw error;
 
     const items = data ?? [];
@@ -45,12 +61,6 @@ export class AgentsService {
         ]);
 
         const agencyData = agency as { name: string; suburb: string; state: string } | null;
-
-        // apply suburb filter after join since we're filtering on agency.suburb
-        if (params.suburb && agencyData?.suburb) {
-          const suburbLower = params.suburb.toLowerCase();
-          if (!agencyData.suburb.toLowerCase().includes(suburbLower)) return null;
-        }
 
         return {
           id: agent.id,
@@ -66,14 +76,13 @@ export class AgentsService {
       }),
     );
 
-    const filtered = enriched.filter((a): a is AgentSummary => a !== null);
-    const total = params.suburb ? filtered.length : (count ?? 0);
+    const total = count ?? 0;
 
     return {
-      items: filtered,
+      items: enriched,
       total,
       page,
-      totalPages: Math.ceil((params.suburb ? filtered.length : (count ?? 0)) / PAGE_SIZE),
+      totalPages: Math.ceil(total / PAGE_SIZE),
     };
   }
 }

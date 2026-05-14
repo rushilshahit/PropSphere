@@ -16,6 +16,7 @@ async function fetchProperties(
   if (filters.carSpaces !== undefined) params.set('carSpaces', String(filters.carSpaces));
   if (filters.propertyTypes.length) params.set('propertyTypes', filters.propertyTypes.join(','));
   if (filters.features.length) params.set('features', filters.features.join(','));
+  if (filters.publishedSince) params.set('publishedSince', filters.publishedSince);
   params.set('sortBy', filters.sortBy);
   params.set('page', String(page));
 

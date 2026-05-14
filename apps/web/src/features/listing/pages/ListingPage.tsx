@@ -6,6 +6,7 @@ import { formatPrice } from '@propsphere/utils';
 import { useProperty, useIncrementViewCount } from '@/api/properties';
 import type { NearbyPlace } from '@/api/overpass';
 import { Button, Skeleton } from '@/components/ui';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useSaveProperty } from '@/features/collections/hooks/useSaveProperty';
 import { SaveModal } from '@/features/collections/components/SaveModal';
 import { PhotoGallery } from '../components/PhotoGallery';
@@ -71,6 +72,7 @@ export default function ListingPage() {
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
   const mapRef = useRef<MapRef>(null);
 
+  const { isAuthenticated } = useAuth();
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(id!);
   const { data: property, isLoading, isError } = useProperty(id!);
   useIncrementViewCount(id!);
@@ -181,10 +183,12 @@ export default function ListingPage() {
                   <Button size="lg" className="w-full" onClick={() => setEnquiryOpen(true)}>
                     Enquire now
                   </Button>
-                  <Button variant="secondary" size="lg" className="w-full" onClick={toggle}>
-                    <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-                    {isSaved ? 'Saved' : 'Save property'}
-                  </Button>
+                  {isAuthenticated && (
+                    <Button variant="secondary" size="lg" className="w-full" onClick={toggle}>
+                      <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+                      {isSaved ? 'Saved' : 'Save property'}
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" className="w-full">
                     <Share2 className="w-4 h-4" />
                     Share
@@ -205,6 +209,7 @@ export default function ListingPage() {
       <EnquiryModal
         propertyId={property.id}
         agentId={property.agent_id}
+        agentName={property.agent?.full_name ?? undefined}
         isOpen={enquiryOpen}
         onClose={() => setEnquiryOpen(false)}
       />

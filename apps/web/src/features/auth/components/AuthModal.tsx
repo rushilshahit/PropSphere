@@ -4,10 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, ShieldCheck } from 'lucide-react';
+import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-
-const ADMIN_URL = (import.meta.env.VITE_ADMIN_URL as string | undefined) ?? 'http://localhost:3002';
 import { useAppDispatch } from '@/store/hooks';
 import { setSession } from '@/features/auth/store/authSlice';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -283,19 +281,6 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
             )}
           </p>
 
-          {mode === 'login' && (
-            <div className="mt-6 pt-5 border-t border-neutral-100 flex justify-center">
-              <a
-                href={ADMIN_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Admin Portal
-              </a>
-            </div>
-          )}
         </div>
       </div>
     </div>,

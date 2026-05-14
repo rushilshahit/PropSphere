@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProperty, createProperty, updateProperty } from '@/api/admin';
 import { Button, Card, Input, Select } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
+import { PropertyImageUploader } from '../components/PropertyImageUploader';
 
 const STEPS = [
   'Basic Info',
@@ -238,9 +239,7 @@ export default function PropertyFormPage() {
           )}
 
           {step === 5 && (
-            <div className="text-center py-8 text-neutral-500">
-              <p>Image uploader — connect to Supabase Storage in production.</p>
-            </div>
+            <PropertyImageUploader propertyId={isEdit ? id : undefined} />
           )}
 
           {step === 6 && (

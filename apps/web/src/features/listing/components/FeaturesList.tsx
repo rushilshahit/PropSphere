@@ -28,15 +28,18 @@ function Section({ title, items }: SectionProps) {
 }
 
 export function FeaturesList({ features }: FeaturesListProps) {
-  const hasAny = features.indoor.length || features.outdoor.length || features.climate.length;
-  if (!hasAny) return null;
+  if (!features) return null;
+  const indoor = features.indoor ?? [];
+  const outdoor = features.outdoor ?? [];
+  const climate = features.climate ?? [];
+  if (!indoor.length && !outdoor.length && !climate.length) return null;
 
   return (
     <div className="bg-white border border-neutral-200 rounded-card p-5 space-y-5">
       <h3 className="text-base font-semibold text-neutral-900">Property features</h3>
-      <Section title="Indoor" items={features.indoor} />
-      <Section title="Outdoor" items={features.outdoor} />
-      <Section title="Climate & Energy" items={features.climate} />
+      <Section title="Indoor" items={indoor} />
+      <Section title="Outdoor" items={outdoor} />
+      <Section title="Climate & Energy" items={climate} />
     </div>
   );
 }

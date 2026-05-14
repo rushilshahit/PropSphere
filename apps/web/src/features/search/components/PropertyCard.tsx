@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Bath, BedDouble, Car, Heart, Maximize2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { PropertySummary } from '@propsphere/types';
 import { formatPrice } from '@propsphere/utils';
 import { Badge } from '@/components/ui';
+import { useAppSelector } from '@/store/hooks';
+import { selectIsAuthenticated } from '@/features/auth/store/authSlice';
 import { useSaveProperty } from '@/features/collections/hooks/useSaveProperty';
 import { SaveModal } from '@/features/collections/components/SaveModal';
 
@@ -20,7 +23,9 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, compact = false }: PropertyCardProps) {
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(property.id);
+  const [imgError, setImgError] = useState(false);
   const heroImage = property.images[0];
   const badgeType = getBadgeType(property);
   const address = [
@@ -38,12 +43,13 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
         <Link to={`/${property.listing_type}/${property.id}`} className="block">
           {/* Image */}
           <div className="aspect-[4/3] relative overflow-hidden">
-            {heroImage ? (
+            {heroImage && heroImage.cdn_url && !imgError ? (
               <img
                 src={heroImage.cdn_url}
                 alt={property.headline ?? address}
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 loading="lazy"
+                onError={() => setImgError(true)}
               />
             ) : (
               <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-sm">
@@ -103,19 +109,21 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
         </Link>
 
         {/* Save button — outside the Link to prevent navigation */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            toggle();
-          }}
-          className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors"
-          aria-label={isSaved ? 'Remove from saved' : 'Save property'}
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${isSaved ? 'fill-brand-accent text-brand-accent' : 'text-neutral-500'}`}
-          />
-        </button>
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              toggle();
+            }}
+            className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors"
+            aria-label={isSaved ? 'Remove from saved' : 'Save property'}
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${isSaved ? 'fill-brand-accent text-brand-accent' : 'text-neutral-500'}`}
+            />
+          </button>
+        )}
       </article>
 
       <SaveModal

@@ -11,6 +11,7 @@ export const searchPropertiesSchema = z.object({
   propertyTypes: z.string().optional(), // comma-separated
   features: z.string().optional(),      // comma-separated
   sortBy: z.enum(['newest', 'price_asc', 'price_desc']).default('newest'),
+  publishedSince: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
   perPage: z.coerce.number().min(1).max(50).default(24),
 });

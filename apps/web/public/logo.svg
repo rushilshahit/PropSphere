@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 240" width="1000" height="240">
+  <defs>
+    
+  </defs>
+  <text class="word" x="500" y="170" text-anchor="middle" fill="#1A56DB" font-size="200">
+    <tspan font-weight="600">Prop</tspan><tspan font-weight="300">sphere</tspan>
+  </text>
+</svg>

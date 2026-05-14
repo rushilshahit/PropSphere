@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { deactivateAgent, listAgents } from '@/api/admin';
+import { deactivateAgent, exportAllAgents, listAgents } from '@/api/admin';
+import { exportToCsv } from '@/lib/csv';
 import { Badge, Button, Card, Pagination, Table } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 
@@ -10,6 +11,7 @@ export default function AgentsPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'agents', page],
@@ -24,11 +26,39 @@ export default function AgentsPage() {
     },
   });
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await exportAllAgents();
+      exportToCsv(
+        rows.map((r) => ({
+          full_name: r.full_name ?? '',
+          email: r.email,
+          agency: r.agency_name,
+          license_no: r.license_no ?? '',
+          years_active: r.years_active ?? '',
+          active_listings: r.active_listings,
+          status: r.is_active ? 'Active' : 'Inactive',
+        })),
+        'agents.csv',
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">Agents</h1>
-        <Button onClick={() => navigate('/agents/new')}>+ New Agent</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleExport} loading={isExporting}>
+            Export CSV
+          </Button>
+          <Button onClick={() => navigate('/agents/new')}>+ New Agent</Button>
+        </div>
       </div>
 
       <Card className="p-0">

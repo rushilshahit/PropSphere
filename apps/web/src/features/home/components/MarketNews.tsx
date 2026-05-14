@@ -8,38 +8,42 @@ interface NewsArticle {
   readTime: string;
   imageUrl: string;
   publishedAt: string;
+  url: string;
 }
 
 const NEWS_ARTICLES: NewsArticle[] = [
   {
     id: '1',
     category: 'MARKET UPDATE',
-    title: 'Ahmedabad property prices rise 8% in Q1 2025',
+    title: "Ahmedabad emerges as India's most affordable big-city housing market",
     excerpt:
-      'Western suburbs like Bopal and Thaltej continue to lead growth as infrastructure investment drives demand.',
-    readTime: '3 min read',
+      'Ahmedabad maintained its position as the cheapest major housing market, with average property prices at ₹4,820 per sq. ft. — a 7.9% year-on-year increase driven by infrastructure growth.',
+    readTime: '4 min read',
     imageUrl: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&q=80',
-    publishedAt: '2025-04-10',
+    publishedAt: '2025-11-06',
+    url: 'https://www.businesstoday.in/personal-finance/real-estate/story/ahmedabad-emerges-as-indias-most-affordable-big-city-housing-market-amid-rising-prices-501077-2025-11-06',
   },
   {
     id: '2',
     category: 'BUYING GUIDE',
-    title: 'First-time buyer guide: navigating stamp duty in Gujarat',
+    title: 'Stamp duty & registration charges in Gujarat 2025: rates & process guide',
     excerpt:
-      'Everything you need to know about stamp duty rates, exemptions, and registration fees for property buyers in Gujarat.',
+      'Stamp duty and registration charges form the legal foundation of property transactions in Gujarat. Here is everything buyers need to know about current rates, exemptions, and the registration process.',
     readTime: '5 min read',
     imageUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80',
-    publishedAt: '2025-03-28',
+    publishedAt: '2025-01-15',
+    url: 'https://www.sobha.com/blog/stamp-duty-registration-charges-in-gujarat/',
   },
   {
     id: '3',
     category: 'RENTING',
-    title: 'Rental vacancy rates hit 5-year low across Ahmedabad',
+    title: 'Why the rental market in Ahmedabad is set to skyrocket in 2025',
     excerpt:
-      'Strong demand from IT sector employees is pushing rents higher in Navrangpura and SG Highway corridors.',
+      'With expanding infrastructure, a booming economy, and rising population, demand for rental properties in Ahmedabad is reaching new heights — particularly along SG Highway and Navrangpura corridors.',
     readTime: '4 min read',
     imageUrl: 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=600&q=80',
-    publishedAt: '2025-03-15',
+    publishedAt: '2025-02-10',
+    url: 'https://aroundtownrealty.in/why-rental-market-in-ahmedabad-is-set-to-skyrocket-in-2025/',
   },
 ];
 
@@ -54,7 +58,9 @@ function formatDate(dateStr: string) {
 function NewsCard({ article }: { article: NewsArticle }) {
   return (
     <a
-      href="#"
+      href={article.url}
+      target="_blank"
+      rel="noopener noreferrer"
       className="block bg-white rounded-card shadow-card hover:shadow-card-hover transition-shadow overflow-hidden group"
     >
       <div className="aspect-[16/9] overflow-hidden rounded-t-card">

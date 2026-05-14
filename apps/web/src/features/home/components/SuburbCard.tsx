@@ -15,10 +15,10 @@ export function SuburbCard({ suburb }: SuburbCardProps) {
   return (
     <article
       className="relative rounded-card overflow-hidden cursor-pointer group aspect-[4/3]"
-      onClick={() => navigate(`/suburb/${suburb.state.toLowerCase()}/${suburb.slug}`)}
+      onClick={() => navigate(`/buy?q=${encodeURIComponent(suburb.name)}`)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && navigate(`/suburb/${suburb.state.toLowerCase()}/${suburb.slug}`)}
+      onKeyDown={(e) => e.key === 'Enter' && navigate(`/buy?q=${encodeURIComponent(suburb.name)}`)}
     >
       <img
         src={imageUrl}

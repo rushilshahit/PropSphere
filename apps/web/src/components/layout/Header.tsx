@@ -8,7 +8,7 @@ import { AuthModal } from '@/features/auth/components/AuthModal';
 import { NotificationCentre } from '@/features/alerts/components/NotificationCentre';
 
 export function Header() {
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, session, isAuthenticated, signOut } = useAuth();
   const isAgent = useAppSelector(selectIsAgent);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: 'login' | 'register' }>({
@@ -32,15 +32,17 @@ export function Header() {
       isActive ? 'text-brand-primary' : 'text-neutral-700 hover:text-neutral-900'
     }`;
 
-  const avatarLetter = user?.full_name?.[0]?.toUpperCase() ?? user?.email[0]?.toUpperCase() ?? '?';
+  const avatarInitials = user?.full_name
+    ? user.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : (user?.email ?? session?.user?.email)?.[0]?.toUpperCase() ?? '?';
 
   return (
     <>
       <header className="sticky top-0 z-40 bg-white border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <NavLink to="/" className="text-xl font-bold text-brand-primary tracking-tight">
-              PropSphere
+            <NavLink to="/" className="flex items-center">
+              <img src="/logo.svg" alt="PropSphere" className="h-8 w-auto" />
             </NavLink>
             <nav className="hidden md:flex items-center gap-6">
               <NavLink to="/buy" className={navLinkClass}>Buy</NavLink>
@@ -66,7 +68,7 @@ export function Header() {
                     />
                   ) : (
                     <span className="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center text-sm font-semibold">
-                      {avatarLetter}
+                      {avatarInitials}
                     </span>
                   )}
                   <ChevronDown className="w-4 h-4" />

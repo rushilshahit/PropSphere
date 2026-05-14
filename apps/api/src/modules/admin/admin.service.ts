@@ -484,7 +484,7 @@ export class AdminService {
 
     let query = this.supabase.client
       .from('enquiries')
-      .select('id, sender_id, property_id, agent_id, status, message, created_at', { count: 'exact' })
+      .select('id, sender_id, sender_name, sender_email, property_id, agent_id, status, message, created_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -497,21 +497,50 @@ export class AdminService {
     const items = data ?? [];
     const enriched = await Promise.all(
       items.map(async (e) => {
-        const eTyped = e as { id: string; sender_id: string; property_id: string; agent_id: string | null };
-        const [{ data: sender }, { data: property }, { data: agent }] = await Promise.all([
-          this.supabase.client.from('profiles').select('full_name, email').eq('id', eTyped.sender_id).single(),
+        const eTyped = e as {
+          id: string;
+          sender_id: string | null;
+          sender_name: string | null;
+          sender_email: string | null;
+          property_id: string;
+          agent_id: string | null;
+        };
+
+        // Resolve sender display — direct columns first, profile fallback for old rows
+        const senderProfilePromise = (!eTyped.sender_name && eTyped.sender_id)
+          ? this.supabase.client.from('profiles').select('full_name, email').eq('id', eTyped.sender_id).single()
+          : Promise.resolve({ data: null });
+
+        const [{ data: property }, { data: senderProfile }, { data: agentProfile }] = await Promise.all([
           this.supabase.client.from('properties').select('headline, suburb, state').eq('id', eTyped.property_id).single(),
+          senderProfilePromise,
           eTyped.agent_id
-            ? this.supabase.client.from('profiles').select('full_name').eq('id', eTyped.agent_id).single()
+            ? this.supabase.client
+                .from('agents')
+                .select('profile_id')
+                .eq('id', eTyped.agent_id)
+                .single()
+                .then(({ data: ag }) =>
+                  ag
+                    ? this.supabase.client
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', (ag as { profile_id: string }).profile_id)
+                        .single()
+                    : { data: null },
+                )
             : Promise.resolve({ data: null }),
         ]);
+
         const p = property as { headline: string | null; suburb: string; state: string } | null;
+        const sp = senderProfile as { full_name: string | null; email: string } | null;
+        const resolvedEmail = eTyped.sender_email ?? sp?.email ?? '';
         return {
           ...e,
-          sender_name: (sender as { full_name: string | null } | null)?.full_name ?? 'Unknown',
-          sender_email: (sender as { email: string } | null)?.email ?? '',
+          sender_name: eTyped.sender_name ?? sp?.full_name ?? resolvedEmail,
+          sender_email: resolvedEmail,
           property_address: p ? `${p.headline ?? ''} ${p.suburb}, ${p.state}` : '',
-          agent_name: (agent as { full_name: string | null } | null)?.full_name ?? null,
+          agent_name: (agentProfile as { full_name: string | null } | null)?.full_name ?? null,
         };
       }),
     );

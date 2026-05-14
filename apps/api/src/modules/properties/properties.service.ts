@@ -40,6 +40,7 @@ export class PropertiesService {
       const types = dto.propertyTypes.split(',').filter(Boolean);
       if (types.length) query = query.in('property_type', types);
     }
+    if (dto.publishedSince) query = query.gte('published_at', dto.publishedSince);
 
     if (dto.sortBy === 'price_asc') {
       query = query.order('price', { ascending: true, nullsFirst: false });

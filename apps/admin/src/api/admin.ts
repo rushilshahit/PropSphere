@@ -367,6 +367,39 @@ export const toggleFeatured = (id: string, isFeatured: boolean) =>
 export const reorderFeatured = (orderedIds: string[]) =>
   request<{ success: boolean }>('POST', '/featured/reorder', { ids: orderedIds });
 
+// ── Export helpers ────────────────────────────────────────────────────────
+async function fetchAllPages<T>(
+  fetchPage: (page: number) => Promise<{ items: T[]; totalPages: number }>,
+): Promise<T[]> {
+  const first = await fetchPage(1);
+  if (first.totalPages <= 1) return first.items;
+  const rest = await Promise.all(
+    Array.from({ length: first.totalPages - 1 }, (_, i) => fetchPage(i + 2)),
+  );
+  return [first.items, ...rest.map((r) => r.items)].flat();
+}
+
+export const exportAllProperties = (params: Omit<PropertyListParams, 'page'> = {}) =>
+  fetchAllPages((page) => listProperties({ ...params, page }));
+
+export const exportAllAgencies = () =>
+  fetchAllPages((page) => listAgencies(page));
+
+export const exportAllAgents = () =>
+  fetchAllPages((page) => listAgents(page));
+
+export const exportAllUsers = (params: { role?: string; search?: string } = {}) =>
+  fetchAllPages((page) => listUsers({ ...params, page }));
+
+export const exportAllSuburbs = () =>
+  fetchAllPages((page) => listSuburbs(page));
+
+export const exportAllSchools = () =>
+  fetchAllPages((page) => listSchools(page));
+
+export const exportAllEnquiries = (params: { status?: string } = {}) =>
+  fetchAllPages((page) => listEnquiries({ ...params, page }));
+
 // ── Analytics ─────────────────────────────────────────────────────────────
 export interface ListingAnalytics {
   mostViewed: { id: string; headline: string; view_count: number }[];

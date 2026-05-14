@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useCreateEnquiry } from '@/api/enquiries';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 
@@ -19,12 +20,14 @@ type FormValues = z.infer<typeof schema>;
 interface EnquiryModalProps {
   propertyId: string;
   agentId: string;
+  agentName?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function EnquiryModal({ propertyId, agentId, isOpen, onClose }: EnquiryModalProps) {
+export function EnquiryModal({ propertyId, agentId, agentName, isOpen, onClose }: EnquiryModalProps) {
   const { toast } = useToast();
+  const { user, session } = useAuth();
   const { mutate, isPending, error } = useCreateEnquiry();
 
   const {
@@ -36,6 +39,16 @@ export function EnquiryModal({ propertyId, agentId, isOpen, onClose }: EnquiryMo
     resolver: zodResolver(schema),
     defaultValues: { message: "I'd like more information about this property." },
   });
+
+  // Pre-fill name and email from logged-in user each time the modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    reset({
+      sender_name: user?.full_name ?? '',
+      sender_email: user?.email ?? session?.user?.email ?? '',
+      message: "I'd like more information about this property.",
+    });
+  }, [isOpen, user, session, reset]);
 
   // Close on Escape
   useEffect(() => {
@@ -56,7 +69,7 @@ export function EnquiryModal({ propertyId, agentId, isOpen, onClose }: EnquiryMo
       { ...data, property_id: propertyId, agent_id: agentId },
       {
         onSuccess: () => {
-          toast('Enquiry sent!', 'success');
+          toast(agentName ? `Email sent to ${agentName}` : 'Enquiry sent!', 'success');
           reset();
           onClose();
         },
@@ -77,7 +90,14 @@ export function EnquiryModal({ propertyId, agentId, isOpen, onClose }: EnquiryMo
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-          <h2 className="text-base font-semibold text-neutral-900">Send enquiry</h2>
+          <div>
+            <h2 className="text-base font-semibold text-neutral-900">
+              {agentName ? `Email ${agentName}` : 'Send enquiry'}
+            </h2>
+            {agentName && (
+              <p className="text-xs text-neutral-500 mt-0.5">Your message will be emailed directly to the agent</p>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}

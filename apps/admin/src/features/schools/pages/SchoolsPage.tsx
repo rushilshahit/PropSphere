@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { createSchool, deleteSchool, importSchoolsCsv, listSchools, updateSchool } from '@/api/admin';
+import { createSchool, deleteSchool, exportAllSchools, importSchoolsCsv, listSchools, updateSchool } from '@/api/admin';
+import { exportToCsv } from '@/lib/csv';
 import { Button, Card, Input, Modal, Pagination, Select, Table } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 
@@ -43,6 +44,7 @@ export default function SchoolsPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'schools', page],
@@ -73,6 +75,28 @@ export default function SchoolsPage() {
     onError: (err) => toast(err instanceof Error ? err.message : 'Failed to delete school', 'error'),
   });
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await exportAllSchools();
+      exportToCsv(
+        rows.map((r) => ({
+          name: r.name,
+          type: r.type,
+          sector: r.sector,
+          suburb: r.suburb,
+          state: r.state,
+          rating: r.rating ? `${r.rating}/5` : '',
+        })),
+        'schools.csv',
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -86,6 +110,9 @@ export default function SchoolsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">Schools</h1>
         <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={handleExport} loading={isExporting}>
+            Export CSV
+          </Button>
           <Button
             variant="secondary"
             size="sm"

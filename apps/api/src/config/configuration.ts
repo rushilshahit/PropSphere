@@ -10,6 +10,7 @@ export const configuration = () => ({
   },
   resend: {
     apiKey: process.env['RESEND_API_KEY'] ?? '',
+    fromEmail: process.env['RESEND_FROM_EMAIL'] ?? 'PropSphere <noreply@propsphere.app>',
   },
   googleMaps: {
     serverKey: process.env['GOOGLE_MAPS_SERVER_KEY'] ?? '',

@@ -16,6 +16,7 @@ function filtersToParams(filters: SearchFilters): URLSearchParams {
   if (filters.propertyTypes.length) p.set('pt', filters.propertyTypes.join(','));
   if (filters.features.length) p.set('ft', filters.features.join(','));
   if (filters.sortBy !== 'newest') p.set('sort', filters.sortBy);
+  if (filters.publishedSince) p.set('since', filters.publishedSince);
   if (filters.page > 1) p.set('p', String(filters.page));
   return p;
 }
@@ -40,6 +41,8 @@ function paramsToFilters(params: URLSearchParams): Partial<SearchFilters> {
   if (ft) out.features = ft.split(',');
   const sort = params.get('sort') as SearchFilters['sortBy'] | null;
   if (sort) out.sortBy = sort;
+  const since = params.get('since');
+  if (since) out.publishedSince = since;
   const p = params.get('p');
   if (p) out.page = Number(p);
   return out;

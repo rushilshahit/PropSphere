@@ -22,7 +22,8 @@ export interface SuburbCardData {
 async function fetchHomeStats(): Promise<HomeStats> {
   const res = await fetch('/api/home/stats');
   if (!res.ok) throw new Error('Failed to fetch home stats');
-  return res.json() as Promise<HomeStats>;
+  const json = await res.json() as { data: HomeStats };
+  return json.data;
 }
 
 async function fetchRecentListings(): Promise<PropertySummary[]> {

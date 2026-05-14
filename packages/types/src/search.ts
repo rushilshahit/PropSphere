@@ -13,6 +13,7 @@ export interface SearchFilters {
   propertyTypes: PropertyType[];
   features: string[];
   sortBy: 'newest' | 'price_asc' | 'price_desc';
+  publishedSince?: string;
   page: number;
 }
 

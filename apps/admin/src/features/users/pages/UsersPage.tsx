@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { listUsers } from '@/api/admin';
+import { exportAllUsers, listUsers } from '@/api/admin';
 import { Badge, Button, Card, Input, Pagination, Select, Table } from '@/components/ui';
+import { useToast } from '@/components/providers/ToastProvider';
+import { exportToCsv } from '@/lib/csv';
 
 const ROLE_OPTIONS = [
   { value: '', label: 'All roles' },
@@ -23,18 +25,46 @@ const ROLE_VARIANT: Record<string, 'default' | 'success' | 'warning' | 'danger' 
 
 export default function UsersPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [page, setPage] = useState(1);
   const [role, setRole] = useState('');
   const [search, setSearch] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users', page, role, search],
     queryFn: () => listUsers({ page, role: role || undefined, search: search || undefined }),
   });
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await exportAllUsers({ role: role || undefined, search: search || undefined });
+      exportToCsv(
+        rows.map((r) => ({
+          full_name: r.full_name ?? '',
+          email: r.email,
+          role: r.role,
+          joined: new Date(r.created_at).toLocaleDateString(),
+          status: r.is_suspended ? 'Suspended' : 'Active',
+        })),
+        'users.csv',
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-neutral-900">Users</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-neutral-900">Users</h1>
+        <Button variant="secondary" onClick={handleExport} loading={isExporting}>
+          Export CSV
+        </Button>
+      </div>
 
       <Card className="p-4">
         <div className="flex gap-3">

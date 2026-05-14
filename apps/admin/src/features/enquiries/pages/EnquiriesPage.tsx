@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listEnquiries, updateEnquiryStatus, type AdminEnquiry } from '@/api/admin';
+import { exportAllEnquiries, listEnquiries, updateEnquiryStatus, type AdminEnquiry } from '@/api/admin';
+import { exportToCsv } from '@/lib/csv';
 import { Badge, Button, Card, Modal, Pagination, Select, Table } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 
@@ -25,11 +26,34 @@ export default function EnquiriesPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [selected, setSelected] = useState<AdminEnquiry | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'enquiries', page, statusFilter],
     queryFn: () => listEnquiries({ page, status: statusFilter || undefined }),
   });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await exportAllEnquiries({ status: statusFilter || undefined });
+      exportToCsv(
+        rows.map((r) => ({
+          sender_name: r.sender_name,
+          sender_email: r.sender_email,
+          property_address: r.property_address,
+          agent_name: r.agent_name ?? '',
+          status: r.status,
+          received: new Date(r.created_at).toLocaleDateString(),
+        })),
+        'enquiries.csv',
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -45,6 +69,9 @@ export default function EnquiriesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">Enquiries</h1>
+        <Button variant="secondary" onClick={handleExport} loading={isExporting}>
+          Export CSV
+        </Button>
       </div>
 
       <Card className="p-4">

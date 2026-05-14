@@ -57,7 +57,7 @@ function Segment({
   return (
     <div className="flex gap-1 flex-wrap">
       {options.map((opt) => {
-        const num = opt === 'Any' ? undefined : opt === '5+' ? 5 : Number(opt);
+        const num = opt === 'Any' ? undefined : opt.endsWith('+') ? Number(opt.slice(0, -1)) : Number(opt);
         const isActive = opt === 'Any' ? value === undefined : value === num;
         return (
           <button

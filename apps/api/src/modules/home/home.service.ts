@@ -36,10 +36,12 @@ export class HomeService {
   }
 
   async getRecentListings() {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
     const { data, error } = await this.supabase.client
       .from('properties')
       .select(PROPERTY_SUMMARY_COLS)
       .eq('status', 'active')
+      .gte('published_at', sevenDaysAgo)
       .order('published_at', { ascending: false })
       .limit(8);
 

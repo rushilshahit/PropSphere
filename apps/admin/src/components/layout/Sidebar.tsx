@@ -25,9 +25,11 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   return (
     <aside className="w-60 shrink-0 bg-white border-r border-neutral-200 flex flex-col h-screen sticky top-0">
-      <div className="h-16 flex items-center px-6 border-b border-neutral-200">
-        <span className="font-bold text-lg text-brand-primary">PropSphere</span>
-        <span className="ml-2 text-xs font-medium bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-badge">
+      <div className="h-16 flex items-center px-6 border-b border-neutral-200 gap-2">
+        <NavLink to="/dashboard" className="flex items-center">
+          <img src="/logo.svg" alt="PropSphere" className="h-8 w-auto" />
+        </NavLink>
+        <span className="text-xs font-medium bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-badge">
           Admin
         </span>
       </div>

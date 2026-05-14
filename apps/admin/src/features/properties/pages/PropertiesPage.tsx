@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { bulkUpdateProperties, deleteProperty, listProperties, type PropertyListParams } from '@/api/admin';
+import { bulkUpdateProperties, deleteProperty, exportAllProperties, listProperties, type PropertyListParams } from '@/api/admin';
+import { exportToCsv } from '@/lib/csv';
 import { Badge, Button, Card, Input, Pagination, Select, Table } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 
@@ -38,6 +39,7 @@ export default function PropertiesPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<PropertyListParams>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'properties', page, filters],
@@ -70,6 +72,30 @@ export default function PropertiesPage() {
     });
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await exportAllProperties(filters);
+      exportToCsv(
+        rows.map((r) => ({
+          headline: r.headline ?? '',
+          suburb: r.suburb,
+          state: r.state,
+          listing_type: r.listing_type,
+          status: r.status,
+          price: r.is_price_hidden ? '' : (r.price_display ?? r.price ?? ''),
+          views: r.view_count,
+          enquiries: r.enquiry_count,
+        })),
+        'properties.csv',
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleFilter = (key: keyof PropertyListParams, value: string) => {
     setFilters((f) => ({ ...f, [key]: value || undefined }));
     setPage(1);
@@ -81,7 +107,12 @@ export default function PropertiesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">Properties</h1>
-        <Button onClick={() => navigate('/properties/new')}>+ New Listing</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleExport} loading={isExporting}>
+            Export CSV
+          </Button>
+          <Button onClick={() => navigate('/properties/new')}>+ New Listing</Button>
+        </div>
       </div>
 
       <Card className="p-4">

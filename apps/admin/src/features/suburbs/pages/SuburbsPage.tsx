@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createSuburb, listSuburbs, refreshSuburbStats, updateSuburb } from '@/api/admin';
+import { createSuburb, exportAllSuburbs, listSuburbs, refreshSuburbStats, updateSuburb } from '@/api/admin';
+import { exportToCsv } from '@/lib/csv';
 import { Button, Card, Input, Modal, Pagination, Table } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useForm } from 'react-hook-form';
@@ -27,6 +28,7 @@ export default function SuburbsPage() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'suburbs', page],
@@ -68,11 +70,41 @@ export default function SuburbsPage() {
     },
   });
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await exportAllSuburbs();
+      exportToCsv(
+        rows.map((r) => ({
+          suburb: r.name,
+          state: r.state,
+          postcode: r.postcode,
+          median_sale_price: r.median_sale_price ?? '',
+          median_rent_price: r.median_rent_price ?? '',
+          days_on_market_avg: r.days_on_market_avg ?? '',
+          stats_updated_at: r.stats_updated_at
+            ? new Date(r.stats_updated_at).toLocaleDateString()
+            : '',
+        })),
+        'suburbs.csv',
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">Suburbs</h1>
-        <Button onClick={() => setCreating(true)}>+ New Suburb</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleExport} loading={isExporting}>
+            Export CSV
+          </Button>
+          <Button onClick={() => setCreating(true)}>+ New Suburb</Button>
+        </div>
       </div>
 
       <Card className="p-0">
