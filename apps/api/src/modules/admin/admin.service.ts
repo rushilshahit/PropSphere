@@ -515,20 +515,19 @@ export class AdminService {
           this.supabase.client.from('properties').select('headline, suburb, state').eq('id', eTyped.property_id).single(),
           senderProfilePromise,
           eTyped.agent_id
-            ? this.supabase.client
-                .from('agents')
-                .select('profile_id')
-                .eq('id', eTyped.agent_id)
-                .single()
-                .then(({ data: ag }) =>
-                  ag
-                    ? this.supabase.client
-                        .from('profiles')
-                        .select('full_name')
-                        .eq('id', (ag as { profile_id: string }).profile_id)
-                        .single()
-                    : { data: null },
-                )
+            ? (async () => {
+                const { data: ag } = await this.supabase.client
+                  .from('agents')
+                  .select('profile_id')
+                  .eq('id', eTyped.agent_id)
+                  .single();
+                if (!ag) return { data: null };
+                return this.supabase.client
+                  .from('profiles')
+                  .select('full_name')
+                  .eq('id', (ag as { profile_id: string }).profile_id)
+                  .single();
+              })()
             : Promise.resolve({ data: null }),
         ]);
 
