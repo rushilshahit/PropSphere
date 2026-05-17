@@ -1,4 +1,5 @@
 import type { Agent, Agency } from './agent';
+import type { PriceHistoryRecord } from './price-history';
 
 export const PropertyType = {
   HOUSE: 'house',
@@ -21,6 +22,7 @@ export const ListingStatus = {
   DRAFT: 'draft',
   ACTIVE: 'active',
   UNDER_OFFER: 'under_offer',
+  UNDER_CONTRACT: 'under_contract',
   SOLD: 'sold',
   LEASED: 'leased',
   WITHDRAWN: 'withdrawn',
@@ -72,6 +74,12 @@ export interface PropertySummary {
   agency_id: string;
   published_at: string | null;
   created_at: string;
+  virtual_tour_url?: string;
+  bhk_config?: string;
+  feature_order?: number;
+  sold_price_is_confidential?: boolean;
+  under_contract_at?: string;
+  next_inspection_at?: string;
 }
 
 export interface PropertyDetail extends PropertySummary {
@@ -95,6 +103,7 @@ export interface PropertyDetail extends PropertySummary {
   inspections: Inspection[];
   agent: Agent;
   agency: Agency;
+  price_history?: PriceHistoryRecord[];
 }
 
 export interface Inspection {
