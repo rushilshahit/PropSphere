@@ -1,6 +1,13 @@
-import { MAPBOX_TOKEN } from '@/lib/mapbox';
+// Routing via OSRM public API (free, no key required)
+// Profile names: driving → car, walking → foot, cycling → bike
 
-interface MapboxRoute {
+const OSRM_PROFILE_MAP: Record<'driving' | 'walking' | 'cycling', string> = {
+  driving: 'car',
+  walking: 'foot',
+  cycling: 'bike',
+};
+
+interface OsrmRoute {
   duration: number;
   distance: number;
   geometry: {
@@ -8,8 +15,8 @@ interface MapboxRoute {
   };
 }
 
-interface MapboxDirectionsResponse {
-  routes: MapboxRoute[];
+interface OsrmResponse {
+  routes: OsrmRoute[];
 }
 
 function formatDuration(seconds: number): string {
@@ -28,15 +35,14 @@ export async function getDirections(
   destLat: number,
   profile: 'driving' | 'walking' | 'cycling',
 ): Promise<{ duration: string; distance: string; geometry: [number, number][] }> {
+  const osrmProfile = OSRM_PROFILE_MAP[profile];
   const url =
-    `https://api.mapbox.com/directions/v5/mapbox/${profile}/` +
+    `https://router.project-osrm.org/route/v1/${osrmProfile}/` +
     `${originLng},${originLat};${destLng},${destLat}` +
-    `?access_token=${MAPBOX_TOKEN}` +
-    `&geometries=geojson` +
-    `&overview=full`;
+    `?overview=full&geometries=geojson`;
 
   const res = await fetch(url);
-  const data = (await res.json()) as MapboxDirectionsResponse;
+  const data = (await res.json()) as OsrmResponse;
   const route = data.routes[0];
 
   if (!route) throw new Error('No route found');

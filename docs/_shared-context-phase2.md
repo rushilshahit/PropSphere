@@ -71,7 +71,7 @@ E2E:      Playwright → `e2e/phase2/<feature>.spec.ts`
 Run `pnpm test` before the ## Git Summary block. Fix failing tests before committing.
 Coverage target: > 80% on all new Phase 2 code.
 
-## Phase 2 DB additions (migration 010_phase2.sql — assume applied)
+## Phase 2 DB additions (migration scripts/010_phase2.sql — assume applied)
 New columns on properties:
   virtual_tour_url TEXT, bhk_config TEXT, feature_order SMALLINT,
   sold_price_is_confidential BOOLEAN DEFAULT FALSE, under_contract_at TIMESTAMPTZ
@@ -84,6 +84,18 @@ New tables:
 agents: + is_verified BOOLEAN, verified_at TIMESTAMPTZ, license_doc_url TEXT, slug TEXT
 agencies: + slug TEXT
 profiles: + pending_agent_since TIMESTAMPTZ
+
+## Scripts folder structure (confirmed from project)
+scripts/
+  008_rpc.sql            existing RPC functions
+  010_phase2.sql         Phase 2 migration (already created — run via migrate.js)
+  admin-migration.sql    admin tables
+  migrate.js             runs migrations against Supabase
+  seed.js                seeds data (extend this for Phase 2 seed)
+
+Run migration: node scripts/migrate.js
+Run seed:      node scripts/seed.js
+DO NOT use: npx supabase db push / npx ts-node — project uses migrate.js/seed.js directly
 
 ## Color system (REA — unchanged from Phase 1)
 brand-primary: #E5001A · brand-secondary: #007A78
