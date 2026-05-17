@@ -495,9 +495,11 @@ Polish checklist (work through, one item at a time):
 ### Deploy checklist
 
 ```bash
-# 1. Run Phase 2 migration on production Supabase
-npx supabase link --project-ref YOUR_REF
-npx supabase db push  # applies 010_phase2.sql to production
+# 1. Run Phase 2 migration on production
+# The project uses scripts/migrate.js — run it pointed at the production DB
+# Set DATABASE_URL to your Supabase production connection string first:
+DATABASE_URL=postgresql://... node scripts/migrate.js
+# This applies scripts/010_phase2.sql (and any other pending migrations)
 
 # 2. Frontend: add VITE_MAPTILER_KEY to Vercel env vars
 # Vercel dashboard → PropSphere project → Settings → Environment Variables
@@ -513,21 +515,23 @@ vercel --prod   # or push to main branch (auto-deploy)
 # Railway auto-redeploys on git push to main
 ```
 
-### Extended seed script (`scripts/seed-phase2.ts`)
+### Extended seed script (`scripts/seed.js` — extend existing)
 
-```typescript
-// Seed targets:
+```javascript
+// Extend the existing scripts/seed.js (not a new file — the project uses seed.js)
+// Add a Phase 2 seed section at the bottom of seed.js:
+
+// Seed targets for Phase 2:
 // 1,000 properties (100 per Ahmedabad suburb)
 // Mix: 700 active, 200 sold, 50 under_contract, 50 withdrawn
 // Price history: 2-3 records per sold property (400-600 new records)
 // 50 properties with virtual_tour_url (YouTube property walkthrough URLs)
 // All active properties: inspection times in next 2 weeks
 // Offers: 30 pending offers on random active properties
-// 2 agencies, 8 agents (4 per agency)
 // BHK config set on all properties (e.g. "2 BHK", "3 BHK + Study")
 
 // Run:
-// npx ts-node scripts/seed-phase2.ts
+// node scripts/seed.js
 // This is additive — don't delete existing seed data first
 ```
 

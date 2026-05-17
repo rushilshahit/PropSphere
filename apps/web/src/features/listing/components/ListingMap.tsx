@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from 'react';
-import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { MAPBOX_TOKEN } from '@/lib/mapbox';
+import Map, { Marker, NavigationControl, type MapRef } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { MAP_STYLE_SATELLITE, MAP_STYLE_STREETS } from '@/lib/map';
 import { PropertyHousePin } from './PropertyHousePin';
 
 interface ListingMapProps {
@@ -42,14 +42,9 @@ export const ListingMap = forwardRef<MapRef, ListingMapProps>(
           <>
             <Map
               ref={ref}
-              mapboxAccessToken={MAPBOX_TOKEN}
               initialViewState={{ longitude: lng, latitude: lat, zoom: 15 }}
               style={{ width: '100%', height: '100%' }}
-              mapStyle={
-                layer === 'satellite'
-                  ? 'mapbox://styles/mapbox/satellite-streets-v12'
-                  : 'mapbox://styles/mapbox/light-v11'
-              }
+              mapStyle={layer === 'satellite' ? MAP_STYLE_SATELLITE : MAP_STYLE_STREETS}
               attributionControl={false}
             >
               <NavigationControl position="bottom-right" showCompass={false} />

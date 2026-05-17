@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import type { RefObject } from 'react';
-import type { MapRef } from 'react-map-gl';
+import type { MapRef } from 'react-map-gl/maplibre';
 import { GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
 import { ListingMap } from './ListingMap';
 import { StreetViewPanel } from './StreetViewPanel';

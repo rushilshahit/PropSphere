@@ -9,12 +9,13 @@
 
 ### Vibe Coding Instruction
 > "I'm extending the PropSphere PostgreSQL database (via Supabase) for Phase 2.
-> Create `scripts/migrations/010_phase2.sql`.
+> The file `scripts/010_phase2.sql` already exists (check if empty/partial — read it first).
+> Fill it with the complete migration SQL below.
 > Run the enum extension FIRST in its own block — Postgres requires it.
 > No FK constraints anywhere (project rule). Use IF NOT EXISTS on all DDL.
 > Show the complete SQL file ready to paste into Supabase SQL editor."
 
-### Deliver: `scripts/migrations/010_phase2.sql`
+### Deliver: `scripts/010_phase2.sql`
 
 **BLOCK 1 — Enum (must execute first, then commit):**
 ```sql
@@ -227,8 +228,9 @@ export interface PriceHistoryRecord {
 
 ### End state check
 ```bash
-npx supabase db push              # applies migration locally
-npx supabase gen types typescript --local > packages/types/src/supabase.ts
+node scripts/migrate.js         # runs pending migrations via migrate.js
+# Note: types/offers.ts and types/price-history.ts already exist (marked ★ in structure)
+# Verify they match the new columns added in 010_phase2.sql
 pnpm typecheck                    # zero errors
 ```
 
@@ -508,7 +510,7 @@ Auto-email agent on new offer via Resend (non-blocking).
 ```bash
 git checkout -b feature/phase2-db-migration
 # After writing migration file:
-git add scripts/migrations/010_phase2.sql
+git add scripts/010_phase2.sql
 git commit -m "chore(db): add phase2 migration with price_history, offers, recently_viewed tables"
 git add packages/types/src/offers.ts packages/types/src/price-history.ts packages/types/src/index.ts
 git commit -m "chore(types): add Phase 2 shared types (Offer, PriceHistoryRecord)"
@@ -516,8 +518,9 @@ git commit -m "chore(types): add Phase 2 shared types (Offer, PriceHistoryRecord
 **Tests to run:**
 ```bash
 # Verify migration applied
-npx supabase db push
-npx supabase gen types typescript --local > packages/types/src/supabase.ts
+node scripts/migrate.js
+# Note: types/offers.ts and types/price-history.ts already exist (marked ★ in structure)
+# Verify they match the new columns added in scripts/010_phase2.sql
 pnpm typecheck   # must pass zero errors before commit
 ```
 
