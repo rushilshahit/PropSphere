@@ -40,9 +40,9 @@ pnpm test --watch --filter=web
 
 ## SESSION 2-A — DB + MapLibre Tests
 
-### Test file: `scripts/migrations/010_phase2.test.sql`
+### Verification queries — paste into Supabase SQL Editor after running `node scripts/migrate.js`
 
-Verify migration was applied correctly (run against local Supabase):
+No separate test file needed — run these queries directly in Supabase dashboard → SQL Editor:
 ```sql
 -- Verify new columns exist
 SELECT column_name FROM information_schema.columns

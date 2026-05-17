@@ -1,4 +1,4 @@
-import { Marker } from 'react-map-gl';
+import { Marker } from 'react-map-gl/maplibre';
 import { useSelector } from 'react-redux';
 import { useQuery } from '@tanstack/react-query';
 import { selectShowSchoolsLayer, selectViewport } from '../store/mapSlice';

@@ -36,6 +36,10 @@ Thumbs.db
 *.swp
 *.swo
 
+# Claude Code local settings
+.claude/settings.local.json
+.claude/settings.json
+
 # Supabase local volume
 supabase/.branches/
 supabase/.temp/

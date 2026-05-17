@@ -68,7 +68,7 @@ propsphere/
 | Server state | TanStack Query v5 |
 | UI state | Redux Toolkit |
 | Forms | react-hook-form + Zod |
-| Maps | Mapbox GL JS + react-map-gl |
+| Maps | MapLibre GL JS + react-map-gl v8 (tile provider: MapTiler, token: `VITE_MAPTILER_KEY`) |
 | Backend | NestJS 10 |
 | Database | PostgreSQL via Supabase (no FK constraints, 3NF) |
 | Search | Postgres FTS — `tsvector` + GIN index (not Typesense) |
@@ -99,6 +99,17 @@ features/{feature}/
 Features: `search`, `listing`, `map`, `auth`, `collections`, `alerts`, `suburb`, `finance`, `agent`, `dashboard`.
 
 Shared primitives live in `src/components/ui/`. API calls go through `src/api/*.ts` (never call Supabase directly from a component).
+
+---
+
+## Maps
+
+MapLibre GL JS replaces Mapbox GL JS. Free, MIT licence.
+Tile provider: MapTiler (100k loads/month free).
+Token: `VITE_MAPTILER_KEY` (configured in MapTiler dashboard → API Keys → allowed URLs).
+Map utils: `@/lib/map` (`apps/web/src/lib/map.ts`) — exports `MAP_STYLE_STREETS`, `MAP_STYLE_SATELLITE`, `DEFAULT_VIEWPORT`, `MAPTILER_KEY`.
+Draw area: `maplibre-gl-draw` (replaces `@mapbox/mapbox-gl-draw` — identical API).
+Import `Map` from `react-map-gl/maplibre` (not `react-map-gl`) — no `mapboxAccessToken` prop needed.
 
 ---
 
