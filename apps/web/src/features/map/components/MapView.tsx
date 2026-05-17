@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
-import Map, { type MapRef } from 'react-map-gl';
+import Map, { type MapRef } from 'react-map-gl/maplibre';
 import { useDispatch, useSelector } from 'react-redux';
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
-import { DEFAULT_VIEWPORT, MAP_STYLE, MAPBOX_TOKEN } from '@/lib/mapbox';
+import MaplibreDraw from 'maplibre-gl-draw';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import 'maplibre-gl-draw/dist/maplibre-gl-draw.css';
+import { DEFAULT_VIEWPORT, MAP_STYLE_STREETS } from '@/lib/map';
 import { useMapProperties, useProperty } from '@/api/properties';
 import {
   clearActiveProperty,
@@ -29,7 +29,7 @@ export function MapView() {
   const searchBbox = useSelector(selectSearchBbox);
 
   const mapRef = useRef<MapRef>(null);
-  const drawRef = useRef<MapboxDraw | null>(null);
+  const drawRef = useRef<MaplibreDraw | null>(null);
 
   const { data: pins = [] } = useMapProperties(searchBbox);
   const { data: activeProperty } = useProperty(activePropertyId ?? '', !!activePropertyId);
@@ -53,12 +53,10 @@ export function MapView() {
     syncBbox();
   }, [syncBbox]);
 
-  // Initialise bbox once the map loads
   const handleMapLoad = useCallback(() => {
     syncBbox();
   }, [syncBbox]);
 
-  // Listen for fly-to requests from MapPage (current location button)
   useEffect(() => {
     const handler = (e: Event) => {
       const { longitude, latitude, zoom } = (e as CustomEvent<{ longitude: number; latitude: number; zoom: number }>).detail;
@@ -68,13 +66,12 @@ export function MapView() {
     return () => window.removeEventListener('map:flyto', handler);
   }, []);
 
-  // Manage draw control lifecycle
   useEffect(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
 
     if (isDrawMode) {
-      drawRef.current = new MapboxDraw({
+      drawRef.current = new MaplibreDraw({
         displayControlsDefault: false,
         controls: { polygon: true, trash: true },
       });
@@ -105,10 +102,9 @@ export function MapView() {
     <div className="relative w-full h-full">
       <Map
         ref={mapRef}
-        mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={DEFAULT_VIEWPORT}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={MAP_STYLE}
+        mapStyle={MAP_STYLE_STREETS}
         onMove={(e) =>
           dispatch(
             setViewport({

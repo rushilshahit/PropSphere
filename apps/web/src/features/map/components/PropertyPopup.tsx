@@ -1,6 +1,6 @@
 import { Bath, BedDouble, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Popup } from 'react-map-gl';
+import { Popup } from 'react-map-gl/maplibre';
 import type { PropertySummary } from '@propsphere/types';
 
 interface PropertyPopupProps {

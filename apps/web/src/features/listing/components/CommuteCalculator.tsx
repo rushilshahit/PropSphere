@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { Car, Footprints, Bike } from 'lucide-react';
-import type { MapRef } from 'react-map-gl';
+import type { MapRef } from 'react-map-gl/maplibre';
 import { cn } from '@/lib/cn';
 import { useDebounce } from '@/hooks/useDebounce';
 import {

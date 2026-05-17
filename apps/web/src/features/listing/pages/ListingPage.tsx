@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Share2 } from 'lucide-react';
-import type { MapRef } from 'react-map-gl';
+import type { MapRef } from 'react-map-gl/maplibre';
 import { formatPrice } from '@propsphere/utils';
 import { useProperty, useIncrementViewCount } from '@/api/properties';
 import type { NearbyPlace } from '@/api/overpass';

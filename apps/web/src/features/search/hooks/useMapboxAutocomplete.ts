@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { MAPBOX_TOKEN } from '@/lib/mapbox';
+import { MAPTILER_KEY } from '@/lib/map';
 
 export interface GeocodingFeature {
   id: string;
@@ -18,11 +18,11 @@ export function useMapboxAutocomplete(query: string, enabled = true) {
     queryFn: async (): Promise<GeocodingFeature[]> => {
       if (!query || query.length < 2) return [];
       const url =
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/` +
+        `https://api.maptiler.com/geocoding/` +
         `${encodeURIComponent(query)}.json` +
-        `?access_token=${MAPBOX_TOKEN}` +
-        `&autocomplete=true` +
-        `&types=place,locality,neighborhood,address` +
+        `?key=${MAPTILER_KEY}` +
+        `&autocomplete=1` +
+        `&types=place,locality,neighbourhood,address` +
         `&country=in` +
         `&limit=6`;
       const res = await fetch(url);

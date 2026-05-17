@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\Claude Learning\\\\Source Code\\\\PropSphere\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(cd \"/d/Projects/Claude Learning/Source Code/PropSphere\" && find . -name \"*.md\" -type f | head -30)",
+      "Read(//d/d/Projects/Claude Learning/Source Code/**)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(pnpm add *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\Claude Learning\\\\Source Code\\\\PropSphere\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(pnpm dev *)"
+    ]
+  }
+}
