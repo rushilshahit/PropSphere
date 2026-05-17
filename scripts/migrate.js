@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS properties (
   sold_at        TIMESTAMPTZ,
   sold_price     INT,
   is_featured    BOOLEAN NOT NULL DEFAULT FALSE,
+  is_seeded      BOOLEAN NOT NULL DEFAULT FALSE,
   view_count     INT     NOT NULL DEFAULT 0,
   enquiry_count  INT     NOT NULL DEFAULT 0,
   search_vector  TSVECTOR,
@@ -420,6 +421,120 @@ CREATE OR REPLACE FUNCTION increment_view_count(prop_id UUID)
 RETURNS void LANGUAGE SQL AS $$
   UPDATE properties SET view_count = view_count + 1 WHERE id = prop_id;
 $$;
+
+
+-- ============================================================
+-- PHASE 2 ADDITIONS
+-- ============================================================
+
+-- Enum: add under_contract to listing_status
+ALTER TYPE listing_status ADD VALUE IF NOT EXISTS 'under_contract';
+
+-- New columns on properties
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS virtual_tour_url           TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS bhk_config                 TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS feature_order              SMALLINT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS sold_price_is_confidential BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS under_contract_at          TIMESTAMPTZ;
+
+-- New columns on agents
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS is_verified        BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS verified_at         TIMESTAMPTZ;
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS license_doc_url     TEXT;
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS slug                TEXT;
+
+-- New column on agencies
+ALTER TABLE agencies ADD COLUMN IF NOT EXISTS slug TEXT;
+
+-- New column on profiles
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS pending_agent_since TIMESTAMPTZ;
+
+-- New table: price history per property
+CREATE TABLE IF NOT EXISTS property_price_history (
+  id           UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  property_id  UUID        NOT NULL,
+  address_key  TEXT        NOT NULL,
+  sold_price   INT         NOT NULL,
+  sold_date    DATE        NOT NULL,
+  sale_method  sale_method,
+  is_seed_data BOOLEAN     NOT NULL DEFAULT FALSE,
+  source       TEXT        NOT NULL DEFAULT 'internal',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- New table: buyer offers
+CREATE TABLE IF NOT EXISTS offers (
+  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  property_id     UUID        NOT NULL,
+  agent_id        UUID        NOT NULL,
+  sender_id       UUID,
+  sender_name     TEXT        NOT NULL,
+  sender_email    TEXT        NOT NULL,
+  sender_phone    TEXT,
+  amount          INT         NOT NULL,
+  message         TEXT,
+  status          TEXT        NOT NULL DEFAULT 'pending'
+                              CHECK (status IN ('pending','accepted','rejected','withdrawn')),
+  is_confidential BOOLEAN     NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- New table: recently viewed properties (authenticated users)
+CREATE TABLE IF NOT EXISTS recently_viewed (
+  id          UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID        NOT NULL,
+  property_id UUID        NOT NULL,
+  viewed_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, property_id)
+);
+
+-- New table: agent license/certificate documents
+CREATE TABLE IF NOT EXISTS agent_certifications (
+  id          UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  agent_id    UUID        NOT NULL,
+  doc_name    TEXT        NOT NULL,
+  doc_url     TEXT        NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Phase 2 indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_agents_slug    ON agents(slug)    WHERE slug IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_agencies_slug  ON agencies(slug)  WHERE slug IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_price_history_property ON property_price_history(property_id);
+CREATE INDEX IF NOT EXISTS idx_price_history_address  ON property_price_history(address_key);
+CREATE INDEX IF NOT EXISTS idx_price_history_date     ON property_price_history(sold_date DESC);
+CREATE INDEX IF NOT EXISTS idx_recently_viewed_user   ON recently_viewed(user_id, viewed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_offers_agent    ON offers(agent_id,    created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_offers_property ON offers(property_id);
+CREATE INDEX IF NOT EXISTS idx_offers_sender   ON offers(sender_id)   WHERE sender_id IS NOT NULL;
+
+-- Phase 2 RLS
+ALTER TABLE offers                 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recently_viewed        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE property_price_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agent_certifications   ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "offers public insert" ON offers FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "offers sender reads own" ON offers FOR SELECT USING (sender_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "offers agent reads own" ON offers FOR SELECT
+    USING (agent_id IN (SELECT id FROM agents WHERE profile_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "recently_viewed own" ON recently_viewed USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "price_history public read" ON property_price_history FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "agent_certs agent own" ON agent_certifications
+    USING (agent_id IN (SELECT id FROM agents WHERE profile_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 `;
 
 async function migrate() {
