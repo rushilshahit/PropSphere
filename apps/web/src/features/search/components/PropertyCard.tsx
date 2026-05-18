@@ -108,6 +108,16 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
           </div>
         </Link>
 
+        {/* Suburb link — separate element to avoid nested <a> */}
+        <div className="px-4 pb-3 -mt-2">
+          <Link
+            to={`/suburb/${property.state.toLowerCase()}/${property.suburb.toLowerCase().replace(/\s+/g, '-')}`}
+            className="text-xs text-brand-secondary hover:text-brand-accent"
+          >
+            {property.suburb}
+          </Link>
+        </div>
+
         {/* Save button — outside the Link to prevent navigation */}
         {isAuthenticated && (
           <button
