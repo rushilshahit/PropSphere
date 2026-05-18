@@ -4,7 +4,7 @@ import type { PropertyDetail } from '@propsphere/types';
 
 interface StatItemProps {
   icon: LucideIcon;
-  value: number;
+  value: number | string;
   label: string;
 }
 
@@ -26,7 +26,11 @@ interface PropertyStatsProps {
 
 export function PropertyStats({ property }: PropertyStatsProps) {
   const stats = [
-    property.bedrooms != null && { icon: BedDouble, value: property.bedrooms, label: 'Bedrooms' },
+    property.bedrooms != null && {
+      icon: BedDouble,
+      value: property.bhk_config ?? property.bedrooms,
+      label: 'Bedrooms',
+    },
     property.bathrooms != null && { icon: Bath, value: property.bathrooms, label: 'Bathrooms' },
     property.car_spaces != null && { icon: Car, value: property.car_spaces, label: 'Car spaces' },
     property.land_size_sqm != null && {
