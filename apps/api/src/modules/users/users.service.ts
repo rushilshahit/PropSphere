@@ -22,6 +22,20 @@ interface EnquiryRow {
   } | null;
 }
 
+interface OfferRow {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  properties: {
+    id: string;
+    headline: string | null;
+    suburb: string;
+    state: string;
+    hero_image_url: string | null;
+  } | null;
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly supabase: SupabaseService) {}
@@ -92,6 +106,35 @@ export class UsersService {
             suburb: e.properties.suburb,
             state: e.properties.state,
             heroImageUrl: e.properties.hero_image_url,
+          }
+        : null,
+    }));
+  }
+
+  async getMyOffers(userId: string) {
+    const { data, error } = await this.supabase.client
+      .from('offers')
+      .select(
+        'id, amount, status, created_at, properties:property_id(id, headline, suburb, state, hero_image_url)',
+      )
+      .eq('sender_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    return ((data ?? []) as unknown as OfferRow[]).map((o) => ({
+      id: o.id,
+      amount: o.amount,
+      status: o.status,
+      createdAt: o.created_at,
+      property: o.properties
+        ? {
+            id: o.properties.id,
+            headline: o.properties.headline,
+            suburb: o.properties.suburb,
+            state: o.properties.state,
+            heroImageUrl: o.properties.hero_image_url,
           }
         : null,
     }));

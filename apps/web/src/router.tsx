@@ -29,6 +29,10 @@ const EnquiryHistoryPage = lazy(() =>
   import('./features/account/pages/EnquiryHistoryPage'),
 );
 
+const OfferHistoryPage = lazy(() =>
+  import('./features/account/pages/OfferHistoryPage'),
+);
+
 const FinancePage = lazy(() => import('./features/finance/pages/FinancePage'));
 
 const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
@@ -179,6 +183,16 @@ export const router = createBrowserRouter([
           <ProtectedRoute>
             <Suspense fallback={<Loading />}>
               <EnquiryHistoryPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'account/offers',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <OfferHistoryPage />
             </Suspense>
           </ProtectedRoute>
         ),

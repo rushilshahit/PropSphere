@@ -18,6 +18,7 @@ import { FeaturesList } from '../components/FeaturesList';
 import { SoldHistory } from '../components/SoldHistory';
 import { AgentCard } from '../components/AgentCard';
 import { EnquiryModal } from '../components/EnquiryModal';
+import { OfferModal } from '@/features/offers/components/OfferModal';
 import { SimilarProperties } from '../components/SimilarProperties';
 import { StreetView } from '../components/StreetView';
 import { NearbyPlaces } from '../components/NearbyPlaces';
@@ -96,12 +97,14 @@ export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
   const mapRef = useRef<MapRef>(null);
 
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(id!);
   const { data: property, isLoading, isError } = useProperty(id!);
+  const isMyListing = Boolean(user && property?.agent?.profile_id === user.id);
   useIncrementViewCount(id!);
   useTrackRecentlyViewed(id!);
 
@@ -228,6 +231,11 @@ export default function ListingPage() {
                       {isSaved ? 'Saved' : 'Save property'}
                     </Button>
                   )}
+                  {property.status === 'active' && property.listing_type === 'buy' && !isMyListing && (
+                    <Button variant="secondary" size="lg" className="w-full" onClick={() => setOfferOpen(true)}>
+                      Make an Offer
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" className="w-full">
                     <Share2 className="w-4 h-4" />
                     Share
@@ -251,6 +259,13 @@ export default function ListingPage() {
         agentName={property.agent?.full_name ?? undefined}
         isOpen={enquiryOpen}
         onClose={() => setEnquiryOpen(false)}
+      />
+      <OfferModal
+        propertyId={property.id}
+        agentId={property.agent_id}
+        askingPrice={property.price ?? undefined}
+        isOpen={offerOpen}
+        onClose={() => setOfferOpen(false)}
       />
       <SaveModal
         propertyId={property.id}
