@@ -146,6 +146,23 @@ export class PropertiesService {
     return this.attachImages(properties ?? []);
   }
 
+  async batchByIds(ids: string[]) {
+    if (!ids.length) return [];
+    const { data, error } = await this.supabase.client
+      .from('properties')
+      .select(PROPERTY_SUMMARY_COLS)
+      .in('id', ids)
+      .eq('status', 'active');
+
+    if (error) throw error;
+
+    const enriched = await this.attachImages((data ?? []) as { id: string }[]);
+
+    // Restore the caller-supplied order
+    const byId = new Map(enriched.map((p) => [(p as { id: string }).id, p]));
+    return ids.map((id) => byId.get(id)).filter(Boolean);
+  }
+
   async incrementViewCount(id: string) {
     await this.supabase.client.rpc('increment_view_count', { prop_id: id });
     return { success: true };
