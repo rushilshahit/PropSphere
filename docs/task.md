@@ -181,6 +181,51 @@
 
 ---
 
+## Phase 2 Checklist
+
+### 2-A: Foundation
+- [x] 010_phase2.sql migration applied
+- [x] MapLibre migration complete (VITE_MAPTILER_KEY)
+- [x] packages/types updated with Phase 2 types
+- [x] CLAUDE.md + skills.md + task.md updated
+
+### 2-B: Wire Phase 1 Stubs
+- [ ] Suburb profile page wired (/suburb/:state/:slug)
+- [ ] DashboardHome wired
+- [ ] ListingManagement wired
+- [ ] ListingWizard submit wired
+- [ ] EnquiriesInbox wired
+- [ ] Agent offer inbox (/dashboard/offers)
+- [ ] Agent self-signup (/become-an-agent)
+
+### 2-C: Sold Ecosystem
+- [ ] Sold PropertyCard variant (red ribbon)
+- [ ] Sold search page (/sold)
+- [ ] Sold detail page sections
+- [ ] Price history chart
+- [ ] Floor plan viewer tab
+- [ ] Virtual tour embed tab
+- [ ] BHK config display
+- [ ] Smart badge logic (New/Inspection/Auction/360Tour/UnderOffer)
+- [ ] Recently viewed (localStorage + DB sync)
+- [ ] Enquiry history (/account/enquiries)
+- [ ] Notes on saved properties
+
+### 2-D: Offers + Directories
+- [ ] Offer submit modal (buyer)
+- [ ] Offer inbox (/dashboard/offers)
+- [ ] Offer history (/account/offers)
+- [ ] Agent profile page (full, /agent/:slug)
+- [ ] Agency profile page (new, /agency/:slug)
+- [ ] Suburb sold aggregations
+- [ ] Agent analytics (/dashboard/analytics)
+
+### 2-E: Finish
+- [ ] Phase 9 polish + PostHog Phase 2 events
+- [ ] Phase 10 deploy + seed 1,000 listings
+
+---
+
 ## Backlog (v2)
 
 - [ ] Next.js migration for SEO
