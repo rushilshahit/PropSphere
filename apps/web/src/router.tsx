@@ -25,6 +25,8 @@ const FinancePage = lazy(() => import('./features/finance/pages/FinancePage'));
 
 const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
 
+const SoldSearchPage = lazy(() => import('./features/sold/pages/SoldSearchPage'));
+
 const SuburbPage = lazy(() => import('./features/suburb/pages/SuburbPage'));
 
 const DashboardLayout = lazy(() =>
@@ -82,7 +84,7 @@ export const router = createBrowserRouter([
         path: 'sold',
         element: (
           <Suspense fallback={<Loading />}>
-            <SearchResultsPage />
+            <SoldSearchPage />
           </Suspense>
         ),
       },
