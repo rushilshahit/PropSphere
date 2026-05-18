@@ -25,6 +25,8 @@ const FinancePage = lazy(() => import('./features/finance/pages/FinancePage'));
 
 const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
 
+const SuburbPage = lazy(() => import('./features/suburb/pages/SuburbPage'));
+
 function StubPage({ label }: { label: string }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 text-center text-neutral-400">
@@ -120,7 +122,14 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
       },
-      { path: 'suburb/:state/:slug', element: <StubPage label="Suburb Profile" /> },
+      {
+        path: 'suburb/:state/:slug',
+        element: (
+          <Suspense fallback={<Loading />}>
+            <SuburbPage />
+          </Suspense>
+        ),
+      },
       {
         path: 'agents',
         element: (
