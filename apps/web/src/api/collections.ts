@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Collection, CollectionWithProperties } from '@propsphere/types';
+
+interface NoteInput {
+  collectionId: string;
+  propertyId: string;
+  notes: string;
+}
 import { supabase } from '@/lib/supabase';
 
 async function authFetch(url: string, options?: RequestInit): Promise<Response> {
@@ -100,6 +106,22 @@ export function useDeleteCollection() {
       authFetch(`/api/collections/${collectionId}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['collections'] });
+    },
+  });
+}
+
+export function useUpdateCollectionNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ collectionId, propertyId, notes }: NoteInput) => {
+      const res = await authFetch(
+        `/api/collections/${collectionId}/properties/${propertyId}/notes`,
+        { method: 'PATCH', body: JSON.stringify({ notes }) },
+      );
+      if (!res.ok) throw new Error('Failed to update note');
+    },
+    onSuccess: (_data, { collectionId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['collections', collectionId, 'properties'] });
     },
   });
 }
