@@ -30,4 +30,9 @@ export class UsersController {
   getMyEnquiries(@Req() req: AuthRequest) {
     return this.usersService.getMyEnquiries(req.user.id);
   }
+
+  @Get('me/offers')
+  getMyOffers(@Req() req: AuthRequest) {
+    return this.usersService.getMyOffers(req.user.id);
+  }
 }
