@@ -1,6 +1,50 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
+// ── Public profile types ──────────────────────────────────────────────────────
+export interface AgentProfile {
+  id: string;
+  slug: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+  email: string;
+  bio: string | null;
+  years_active: number | null;
+  license_no: string | null;
+  is_verified: boolean;
+  agency: { id: string; name: string; slug: string; logo_url: string | null } | null;
+  activeListings: unknown[];
+  activeListingCount: number;
+  soldLast12m: number;
+  avgDaysOnMarket: number | null;
+  medianSoldPrice: number | null;
+}
+
+export interface SoldProperty {
+  id: string;
+  headline: string | null;
+  suburb: string;
+  state: string;
+  postcode: string;
+  unit_number: string | null;
+  street_number: string;
+  street_name: string;
+  price: number | null;
+  price_display: string | null;
+  is_price_hidden: boolean;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  car_spaces: number | null;
+  listing_type: string;
+  property_type: string;
+  status: string;
+  images: { cdn_url: string; sort_order: number }[];
+  sold_price: number | null;
+  sold_at: string | null;
+  published_at: string | null;
+}
+
 export interface AgentSummary {
   id: string;
   full_name: string | null;
@@ -180,5 +224,33 @@ export function useUpdateOfferStatus() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['agent', 'offers'] });
     },
+  });
+}
+
+export function useAgentBySlug(slug: string) {
+  return useQuery({
+    queryKey: ['agents', slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/agents/${slug}`);
+      if (!res.ok) throw new Error('Agent not found');
+      const json = (await res.json()) as { data: AgentProfile };
+      return json.data;
+    },
+    staleTime: 5 * 60_000,
+    enabled: !!slug,
+  });
+}
+
+export function useAgentSoldHistory(slug: string) {
+  return useQuery({
+    queryKey: ['agents', slug, 'sold'],
+    queryFn: async () => {
+      const res = await fetch(`/api/agents/${slug}/sold`);
+      if (!res.ok) throw new Error('Failed to fetch sold history');
+      const json = (await res.json()) as { data: SoldProperty[] };
+      return json.data;
+    },
+    staleTime: 5 * 60_000,
+    enabled: !!slug,
   });
 }
