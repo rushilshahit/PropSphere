@@ -263,7 +263,7 @@ export class AdminService {
       items.map(async (a) => {
         const agentTyped = a as { id: string; profile_id: string; agency_id: string };
         const [{ data: profile }, { data: agency }, { count: listingCount }] = await Promise.all([
-          this.supabase.client.from('profiles').select('full_name, email').eq('id', agentTyped.profile_id).single(),
+          this.supabase.client.from('profiles').select('full_name, email, role').eq('id', agentTyped.profile_id).single(),
           this.supabase.client.from('agencies').select('name').eq('id', agentTyped.agency_id).single(),
           this.supabase.client.from('properties').select('*', { count: 'exact', head: true }).eq('agent_id', agentTyped.id).eq('status', 'active'),
         ]);
@@ -271,6 +271,7 @@ export class AdminService {
           ...a,
           full_name: (profile as { full_name: string | null } | null)?.full_name ?? null,
           email: (profile as { email: string } | null)?.email ?? '',
+          profile_role: (profile as { role: string } | null)?.role ?? '',
           agency_name: (agency as { name: string } | null)?.name ?? '',
           active_listings: listingCount ?? 0,
         };
@@ -311,6 +312,31 @@ export class AdminService {
     const { error } = await this.supabase.client.from('agents').update(patch).eq('id', id);
     if (error) throw error;
     await this.audit(actor, 'agent.update', { id });
+    return { success: true };
+  }
+
+  async approveAgent(agentId: string, actor: AdminProfile) {
+    const { data: agentRow, error: agentFetchErr } = await this.supabase.client
+      .from('agents')
+      .select('profile_id')
+      .eq('id', agentId)
+      .single();
+    if (agentFetchErr || !agentRow) throw new NotFoundException(`Agent ${agentId} not found`);
+
+    const profileId = (agentRow as { profile_id: string }).profile_id;
+
+    await Promise.all([
+      this.supabase.client
+        .from('profiles')
+        .update({ role: 'agent', pending_agent_since: null })
+        .eq('id', profileId),
+      this.supabase.client
+        .from('agents')
+        .update({ is_active: true, is_verified: true, verified_at: new Date() })
+        .eq('id', agentId),
+    ]);
+
+    await this.audit(actor, 'agent.approve', { agentId, profileId });
     return { success: true };
   }
 
