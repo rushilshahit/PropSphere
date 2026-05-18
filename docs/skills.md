@@ -123,6 +123,63 @@ When adding a new Mapbox map layer:
 
 ---
 
+## Skill: Wire Existing Stub Page
+
+When backend endpoint exists + frontend component exists as stub:
+
+1. Read stub component to understand current state
+2. Read service/controller for API shape and response format
+3. Add TanStack Query hook in api/ if missing
+4. Wire hook → component props → update router if needed
+5. Add loading skeleton + error state + empty state
+
+DO NOT rewrite components — extend what exists.
+
+---
+
+## Skill: Add Price History Chart
+
+1. Add `usePriceHistory(propertyId)` in `api/properties.ts`
+2. Backend: `GET /properties/:id/price-history` from `property_price_history` table
+3. Map to Recharts LineChart: `{ date: string, price: number }[]`
+4. Format prices with `formatPrice()` from `@propsphere/utils`
+5. Format dates with `format(date, 'MMM yyyy')` from `date-fns`
+6. Empty state: "No price history recorded yet"
+
+---
+
+## Skill: Track Recently Viewed
+
+On ListingPage mount:
+
+1. Read `localStorage` `'rv'` key → parse JSON array of IDs
+2. Prepend current `propertyId`, dedupe, slice to 20
+3. Write back to `localStorage`
+4. If user authenticated: `POST /users/recently-viewed` (fire-and-forget)
+
+Never block the page render on this.
+
+---
+
+## Skill: Add MapLibre Map Component
+
+1. Import `Map` from `react-map-gl/maplibre` (not `react-map-gl`)
+2. Use `MAP_STYLE_STREETS` from `@/lib/map` (not `MAPBOX_TOKEN`)
+3. No `mapboxAccessToken` prop on `Map` component
+4. All existing `Marker`, `Popup`, `NavigationControl` APIs unchanged
+
+---
+
+## Skill: Implement Offer Flow
+
+Buyer side: `OfferModal` with `react-hook-form` + Zod
+Backend: `POST /offers` — unauthenticated allowed (`sender_id` nullable)
+Agent side: `GET /agents/me/offers` — filter by `agent_id`
+Status update: `PATCH /offers/:id/status`
+Auto-email agent on new offer via Resend (non-blocking).
+
+---
+
 ## What Claude Should NOT Do
 
 - Do not install new npm packages without noting it explicitly in the response

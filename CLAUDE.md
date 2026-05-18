@@ -171,6 +171,30 @@ PRs: squash-merge into `develop`; one feature/fix per PR; minimum 1 approval.
 
 ---
 
+## Phase 2 (In Progress)
+
+### All decisions locked — see docs/DECISIONS-LOCKED.md
+
+### Map change
+MapLibre GL JS replaces Mapbox GL JS.
+VITE_MAPTILER_KEY (MapTiler, free) replaces VITE_MAPBOX_TOKEN.
+Import from @/lib/map, NOT @/lib/mapbox (deleted).
+
+### New DB tables (migration 010_phase2.sql)
+property_price_history, offers, recently_viewed, agent_certifications
+
+### New routes
+/become-an-agent, /agent/:slug (full), /agency/:slug (new),
+/account/history, /account/enquiries, /account/offers,
+/dashboard/offers, /dashboard/analytics
+
+### Agent approval flow
+pending_agent → admin panel "Approve" → agent
+POST /agents/apply creates agent row + sets profile.role = 'pending_agent'
+PATCH /admin/agents/:id/approve flips to 'agent' + sends email
+
+---
+
 ## Key Reference Docs
 
 | Doc | Contents |
