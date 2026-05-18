@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
-import type { PropertyDetail, PropertyMapPin, PropertySummary, SearchFilters, SearchResult } from '@propsphere/types';
+import type { PriceHistoryRecord, PropertyDetail, PropertyMapPin, PropertySummary, SearchFilters, SearchResult } from '@propsphere/types';
 
 async function fetchProperties(
   filters: SearchFilters,
@@ -76,6 +76,22 @@ export function useMapProperties(bbox: MapBbox | null) {
     queryFn: () => fetchMapProperties(bbox!),
     enabled: bbox !== null,
     staleTime: 20_000,
+  });
+}
+
+async function fetchPriceHistory(id: string): Promise<PriceHistoryRecord[]> {
+  const res = await fetch(`/api/properties/${id}/price-history`);
+  if (!res.ok) throw new Error('Failed to fetch price history');
+  const json = await res.json() as { data: PriceHistoryRecord[] };
+  return json.data;
+}
+
+export function usePriceHistory(propertyId: string) {
+  return useQuery({
+    queryKey: ['price-history', propertyId],
+    queryFn: () => fetchPriceHistory(propertyId),
+    staleTime: 24 * 60 * 60_000,
+    enabled: !!propertyId,
   });
 }
 

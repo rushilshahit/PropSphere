@@ -19,6 +19,7 @@
     "@supabase/supabase-js": "^2.43.0",
     "@tanstack/react-query": "^5.45.0",
     "@vis.gl/react-google-maps": "^1.8.3",
+    "date-fns": "^4.2.1",
     "ical-generator": "^10.2.0",
     "lucide-react": "^0.395.0",
     "maplibre-gl": "^5.24.0",
@@ -29,6 +30,7 @@
     "react-map-gl": "^8.1.1",
     "react-redux": "^9.1.0",
     "react-router-dom": "^6.24.0",
+    "recharts": "^2.15.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
