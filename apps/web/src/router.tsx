@@ -27,6 +27,14 @@ const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
 
 const SuburbPage = lazy(() => import('./features/suburb/pages/SuburbPage'));
 
+const DashboardLayout = lazy(() =>
+  import('./features/dashboard/components/DashboardLayout').then((m) => ({ default: m.DashboardLayout })),
+);
+const DashboardHome = lazy(() => import('./features/dashboard/pages/DashboardHome'));
+const ListingManagement = lazy(() => import('./features/dashboard/pages/ListingManagement'));
+const EnquiriesInbox = lazy(() => import('./features/dashboard/pages/EnquiriesInbox'));
+const OfferInbox = lazy(() => import('./features/dashboard/pages/OfferInbox'));
+
 function StubPage({ label }: { label: string }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 text-center text-neutral-400">
@@ -148,7 +156,50 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'account/*', element: <StubPage label="Account" /> },
-      { path: 'dashboard/*', element: <StubPage label="Agent Dashboard" /> },
+      {
+        path: 'dashboard',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <DashboardLayout />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={<Loading />}>
+                <DashboardHome />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'listings',
+            element: (
+              <Suspense fallback={<Loading />}>
+                <ListingManagement />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'enquiries',
+            element: (
+              <Suspense fallback={<Loading />}>
+                <EnquiriesInbox />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'offers',
+            element: (
+              <Suspense fallback={<Loading />}>
+                <OfferInbox />
+              </Suspense>
+            ),
+          },
+        ],
+      },
     ],
   },
 ]);
