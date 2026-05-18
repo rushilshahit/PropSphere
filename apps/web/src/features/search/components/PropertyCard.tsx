@@ -17,12 +17,21 @@ function getBadgeType(property: PropertySummary): Parameters<typeof Badge>[0]['t
   return null;
 }
 
+function formatSoldDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 interface PropertyCardProps {
   property: PropertySummary;
   compact?: boolean;
+  variant?: 'active' | 'sold';
 }
 
-export function PropertyCard({ property, compact = false }: PropertyCardProps) {
+export function PropertyCard({ property, compact = false, variant = 'active' }: PropertyCardProps) {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(property.id);
   const [imgError, setImgError] = useState(false);
@@ -36,6 +45,14 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
   ]
     .filter(Boolean)
     .join(' ');
+
+  const daysOnMarket =
+    variant === 'sold' && property.sold_at && property.published_at
+      ? Math.floor(
+          (new Date(property.sold_at).getTime() - new Date(property.published_at).getTime()) /
+            86_400_000,
+        )
+      : undefined;
 
   return (
     <>
@@ -66,15 +83,44 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
                 {property.images.length} photos
               </span>
             )}
+            {variant === 'sold' && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-5 -left-6 w-28 text-center text-[11px] font-bold text-white bg-red-600 py-1 transform -rotate-45 shadow-sm">
+                  SOLD
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Content */}
           <div className="p-4">
-            <p className="text-xl font-bold tabular-nums text-neutral-900">
-              {property.is_price_hidden
-                ? 'Contact agent'
-                : property.price_display ?? (property.price ? formatPrice(property.price) : 'Contact agent')}
-            </p>
+            {variant === 'sold' ? (
+              <>
+                <p className="text-xl font-bold tabular-nums text-neutral-900">
+                  {property.sold_price_is_confidential ? (
+                    <span className="text-base text-neutral-500 italic font-normal">
+                      Price withheld
+                    </span>
+                  ) : (
+                    formatPrice(property.sold_price ?? 0)
+                  )}
+                </p>
+                {property.sold_at && (
+                  <p className="text-xs text-red-600 font-medium mt-0.5">
+                    Sold {formatSoldDate(property.sold_at)}
+                  </p>
+                )}
+                {daysOnMarket !== undefined && (
+                  <p className="text-xs text-neutral-500 mt-1">{daysOnMarket} days on market</p>
+                )}
+              </>
+            ) : (
+              <p className="text-xl font-bold tabular-nums text-neutral-900">
+                {property.is_price_hidden
+                  ? 'Contact agent'
+                  : property.price_display ?? (property.price ? formatPrice(property.price) : 'Contact agent')}
+              </p>
+            )}
             <p className="text-sm text-neutral-700 mt-1 truncate">{address}</p>
 
             {!compact && (
@@ -109,17 +155,25 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
         </Link>
 
         {/* Suburb link — separate element to avoid nested <a> */}
-        <div className="px-4 pb-3 -mt-2">
+        <div className="px-4 pb-3 -mt-2 flex items-center justify-between">
           <Link
             to={`/suburb/${property.state.toLowerCase()}/${property.suburb.toLowerCase().replace(/\s+/g, '-')}`}
             className="text-xs text-brand-secondary hover:text-brand-accent"
           >
             {property.suburb}
           </Link>
+          {variant === 'sold' && property.agent_slug && (
+            <Link
+              to={`/agent/${property.agent_slug}`}
+              className="text-xs text-red-600 font-medium hover:underline"
+            >
+              View agent →
+            </Link>
+          )}
         </div>
 
-        {/* Save button — outside the Link to prevent navigation */}
-        {isAuthenticated && (
+        {/* Save button — only for active variant, outside the Link to prevent navigation */}
+        {variant === 'active' && isAuthenticated && (
           <button
             type="button"
             onClick={(e) => {

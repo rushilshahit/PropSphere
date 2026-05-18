@@ -78,6 +78,9 @@ export interface PropertySummary {
   bhk_config?: string;
   feature_order?: number;
   sold_price_is_confidential?: boolean;
+  sold_at?: string | null;
+  sold_price?: number | null;
+  agent_slug?: string | null;
   under_contract_at?: string;
   next_inspection_at?: string;
 }
