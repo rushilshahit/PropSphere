@@ -3,19 +3,11 @@ import { Bath, BedDouble, Car, Heart, Maximize2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { PropertySummary } from '@propsphere/types';
 import { formatPrice } from '@propsphere/utils';
-import { Badge } from '@/components/ui';
 import { useAppSelector } from '@/store/hooks';
 import { selectIsAuthenticated } from '@/features/auth/store/authSlice';
 import { useSaveProperty } from '@/features/collections/hooks/useSaveProperty';
 import { SaveModal } from '@/features/collections/components/SaveModal';
-
-function getBadgeType(property: PropertySummary): Parameters<typeof Badge>[0]['type'] | null {
-  if (property.status === 'sold') return 'sold';
-  if (property.status === 'under_offer') return 'under_offer';
-  if (property.sale_method === 'auction') return 'auction';
-  if (property.listing_type === 'rent') return 'rent';
-  return null;
-}
+import { deriveBadge } from '../utils/derive-badge';
 
 interface PropertyCardProps {
   property: PropertySummary;
@@ -27,7 +19,7 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(property.id);
   const [imgError, setImgError] = useState(false);
   const heroImage = property.images[0];
-  const badgeType = getBadgeType(property);
+  const badge = deriveBadge(property);
   const address = [
     property.unit_number ? `${property.unit_number}/${property.street_number}` : property.street_number,
     property.street_name,
@@ -56,9 +48,11 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
                 No image
               </div>
             )}
-            {badgeType && (
-              <span className="absolute top-3 left-3">
-                <Badge type={badgeType} />
+            {badge && (
+              <span
+                className={`absolute top-3 left-3 text-[11px] font-bold px-2 py-0.5 rounded-[4px] ${badge.className}`}
+              >
+                {badge.label}
               </span>
             )}
             {property.images.length > 1 && (
@@ -82,7 +76,7 @@ export function PropertyCard({ property, compact = false }: PropertyCardProps) {
                 {property.bedrooms != null && (
                   <span className="flex items-center gap-1">
                     <BedDouble className="w-4 h-4" />
-                    {property.bedrooms}
+                    {property.bhk_config ?? property.bedrooms}
                   </span>
                 )}
                 {property.bathrooms != null && (
