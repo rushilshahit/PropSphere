@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -61,5 +61,16 @@ export class AgentsController {
       page: page ? parseInt(page, 10) : undefined,
       suburb: suburb || undefined,
     });
+  }
+
+  // Slug-based public routes — declared after me/* and list to avoid conflicts
+  @Get(':slug/sold')
+  getSoldHistory(@Param('slug') slug: string) {
+    return this.agentsService.getSoldHistory(slug);
+  }
+
+  @Get(':slug')
+  getAgentProfile(@Param('slug') slug: string) {
+    return this.agentsService.getAgentProfile(slug);
   }
 }
