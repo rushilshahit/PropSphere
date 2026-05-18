@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Patch, Query, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UsePipes } from '@nestjs/common';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { searchPropertiesSchema, type SearchPropertiesDto } from './dto/search-properties.dto';
 import { boundingBoxSchema, type BoundingBoxDto } from './dto/bounding-box.dto';
+import { batchPropertiesSchema, type BatchPropertiesDto } from './dto/batch-properties.dto';
 import { PropertiesService } from './properties.service';
 
 @Controller('properties')
@@ -18,6 +19,12 @@ export class PropertiesController {
   @UsePipes(new ZodValidationPipe(boundingBoxSchema))
   getMapPins(@Query() dto: BoundingBoxDto) {
     return this.propertiesService.getMapPins(dto);
+  }
+
+  // POST before :id to avoid route collision
+  @Post('batch')
+  batchByIds(@Body(new ZodValidationPipe(batchPropertiesSchema)) dto: BatchPropertiesDto) {
+    return this.propertiesService.batchByIds(dto.ids);
   }
 
   @Get('similar/:id')

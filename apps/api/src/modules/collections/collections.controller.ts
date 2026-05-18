@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -14,8 +15,10 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
   addPropertySchema,
   createCollectionSchema,
+  updateNoteSchema,
   type AddPropertyDto,
   type CreateCollectionDto,
+  type UpdateNoteDto,
 } from './dto/collections.dto';
 import { CollectionsService } from './collections.service';
 
@@ -73,6 +76,17 @@ export class CollectionsController {
     @Body(new ZodValidationPipe(addPropertySchema)) dto: AddPropertyDto,
   ) {
     return this.collectionsService.addPropertyToCollection(req.user.id, id, dto);
+  }
+
+  @Patch(':id/properties/:propertyId/notes')
+  async updateNote(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('propertyId') propertyId: string,
+    @Body(new ZodValidationPipe(updateNoteSchema)) dto: UpdateNoteDto,
+  ) {
+    await this.collectionsService.updatePropertyNote(req.user.id, id, propertyId, dto);
+    return { success: true };
   }
 
   @Delete(':id/properties/:propertyId')

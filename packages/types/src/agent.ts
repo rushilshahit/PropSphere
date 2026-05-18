@@ -14,11 +14,13 @@ export interface Agency {
 
 export interface Agent {
   id: string;
+  slug: string | null;
   profile_id: string;
   agency_id: string;
   license_no: string | null;
   bio: string | null;
   years_active: number | null;
+  is_verified: boolean;
   created_at: string;
   // Joined from profiles
   full_name: string | null;

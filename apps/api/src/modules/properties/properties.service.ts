@@ -7,7 +7,7 @@ import type { BoundingBoxDto } from './dto/bounding-box.dto';
 const PAGE_SIZE = 24;
 
 const PROPERTY_SUMMARY_COLS =
-  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, lat, lng, agent_id, agency_id, created_at';
+  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, lat, lng, agent_id, agency_id, created_at, bhk_config, virtual_tour_url, auction_at';
 
 @Injectable()
 export class PropertiesService {
@@ -146,6 +146,23 @@ export class PropertiesService {
     return this.attachImages(properties ?? []);
   }
 
+  async batchByIds(ids: string[]) {
+    if (!ids.length) return [];
+    const { data, error } = await this.supabase.client
+      .from('properties')
+      .select(PROPERTY_SUMMARY_COLS)
+      .in('id', ids)
+      .eq('status', 'active');
+
+    if (error) throw error;
+
+    const enriched = await this.attachImages((data ?? []) as { id: string }[]);
+
+    // Restore the caller-supplied order
+    const byId = new Map(enriched.map((p) => [(p as { id: string }).id, p]));
+    return ids.map((id) => byId.get(id)).filter(Boolean);
+  }
+
   async incrementViewCount(id: string) {
     await this.supabase.client.rpc('increment_view_count', { prop_id: id });
     return { success: true };
@@ -216,23 +233,46 @@ export class PropertiesService {
 
   private async attachImages(properties: { id: string }[]) {
     const ids = properties.map((p) => p.id);
-    if (!ids.length) return properties.map((p) => ({ ...p, images: [] }));
+    if (!ids.length) return properties.map((p) => ({ ...p, images: [], next_inspection_at: null }));
 
-    const { data: images } = await this.supabase.client
-      .from('property_images')
-      .select('id, property_id, storage_path, cdn_url, caption, sort_order, is_floor_plan, created_at')
-      .in('property_id', ids)
-      .eq('is_floor_plan', false)
-      .order('sort_order');
+    const now = new Date().toISOString();
+
+    const [imagesResult, inspectionsResult] = await Promise.all([
+      this.supabase.client
+        .from('property_images')
+        .select('id, property_id, storage_path, cdn_url, caption, sort_order, is_floor_plan, created_at')
+        .in('property_id', ids)
+        .eq('is_floor_plan', false)
+        .order('sort_order'),
+      this.supabase.client
+        .from('inspections')
+        .select('property_id, starts_at')
+        .in('property_id', ids)
+        .eq('cancelled', false)
+        .gte('starts_at', now)
+        .order('starts_at', { ascending: true }),
+    ]);
 
     const byProperty = new Map<string, unknown[]>();
-    for (const img of images ?? []) {
+    for (const img of imagesResult.data ?? []) {
       const typed = img as { property_id: string };
       const arr = byProperty.get(typed.property_id) ?? [];
       arr.push(img);
       byProperty.set(typed.property_id, arr);
     }
 
-    return properties.map((p) => ({ ...p, images: byProperty.get(p.id) ?? [] }));
+    const nextInspectionByProperty = new Map<string, string>();
+    for (const insp of inspectionsResult.data ?? []) {
+      const typed = insp as { property_id: string; starts_at: string };
+      if (!nextInspectionByProperty.has(typed.property_id)) {
+        nextInspectionByProperty.set(typed.property_id, typed.starts_at);
+      }
+    }
+
+    return properties.map((p) => ({
+      ...p,
+      images: byProperty.get(p.id) ?? [],
+      next_inspection_at: nextInspectionByProperty.get(p.id) ?? null,
+    }));
   }
 }

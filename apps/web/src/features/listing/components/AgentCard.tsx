@@ -1,4 +1,5 @@
 import { Mail, Phone, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { PropertyDetail } from '@propsphere/types';
 import { Button } from '@/components/ui';
 
@@ -29,10 +30,29 @@ export function AgentCard({ agent, agency, onEnquire }: AgentCardProps) {
 
         {/* Agent info */}
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-neutral-900 truncate">
-            {agent.full_name ?? 'Agent'}
-          </p>
-          <p className="text-xs text-neutral-500 truncate">{agency.name}</p>
+          {agent.slug ? (
+            <Link
+              to={`/agent/${agent.slug}`}
+              className="text-sm font-semibold text-neutral-900 hover:text-brand-primary truncate block"
+            >
+              {agent.full_name ?? 'Agent'}
+            </Link>
+          ) : (
+            <p className="text-sm font-semibold text-neutral-900 truncate">
+              {agent.full_name ?? 'Agent'}
+            </p>
+          )}
+          {agency.slug ? (
+            <Link
+              to={`/agency/${agency.slug}`}
+              className="text-xs text-brand-secondary hover:text-brand-accent truncate block"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {agency.name}
+            </Link>
+          ) : (
+            <p className="text-xs text-neutral-500 truncate">{agency.name}</p>
+          )}
         </div>
 
         {/* Agency logo */}

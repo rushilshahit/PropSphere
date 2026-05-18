@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Share2 } from 'lucide-react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { formatPrice } from '@propsphere/utils';
 import { useProperty, useIncrementViewCount } from '@/api/properties';
 import type { NearbyPlace } from '@/api/overpass';
+import { supabase } from '@/lib/supabase';
 import { Button, Skeleton } from '@/components/ui';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useSaveProperty } from '@/features/collections/hooks/useSaveProperty';
@@ -17,6 +18,7 @@ import { FeaturesList } from '../components/FeaturesList';
 import { SoldHistory } from '../components/SoldHistory';
 import { AgentCard } from '../components/AgentCard';
 import { EnquiryModal } from '../components/EnquiryModal';
+import { OfferModal } from '@/features/offers/components/OfferModal';
 import { SimilarProperties } from '../components/SimilarProperties';
 import { StreetView } from '../components/StreetView';
 import { NearbyPlaces } from '../components/NearbyPlaces';
@@ -39,6 +41,32 @@ function buildAddress(property: {
   ]
     .filter(Boolean)
     .join(' ');
+}
+
+function useTrackRecentlyViewed(propertyId: string) {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!propertyId) return;
+
+    const stored = localStorage.getItem('rv');
+    const viewed: string[] = stored ? (JSON.parse(stored) as string[]) : [];
+    const updated = [propertyId, ...viewed.filter((id) => id !== propertyId)].slice(0, 20);
+    localStorage.setItem('rv', JSON.stringify(updated));
+
+    if (user) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        fetch('/api/users/recently-viewed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ propertyId }),
+        }).catch(() => {});
+      }).catch(() => {});
+    }
+  }, [propertyId]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 function daysOnMarket(publishedAt: string | null): number {
@@ -69,13 +97,16 @@ export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
   const mapRef = useRef<MapRef>(null);
 
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(id!);
   const { data: property, isLoading, isError } = useProperty(id!);
+  const isMyListing = Boolean(user && property?.agent?.profile_id === user.id);
   useIncrementViewCount(id!);
+  useTrackRecentlyViewed(id!);
 
   if (isLoading) return <PageSkeleton />;
 
@@ -108,7 +139,12 @@ export default function ListingPage() {
         </Link>
 
         <div className="mb-6">
-          <PhotoGallery images={property.images} />
+          <PhotoGallery
+            images={property.images}
+            virtualTourUrl={property.virtual_tour_url}
+            lat={property.lat}
+            lng={property.lng}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
@@ -195,6 +231,11 @@ export default function ListingPage() {
                       {isSaved ? 'Saved' : 'Save property'}
                     </Button>
                   )}
+                  {property.status === 'active' && property.listing_type === 'buy' && !isMyListing && (
+                    <Button variant="secondary" size="lg" className="w-full" onClick={() => setOfferOpen(true)}>
+                      Make an Offer
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" className="w-full">
                     <Share2 className="w-4 h-4" />
                     Share
@@ -218,6 +259,13 @@ export default function ListingPage() {
         agentName={property.agent?.full_name ?? undefined}
         isOpen={enquiryOpen}
         onClose={() => setEnquiryOpen(false)}
+      />
+      <OfferModal
+        propertyId={property.id}
+        agentId={property.agent_id}
+        askingPrice={property.price ?? undefined}
+        isOpen={offerOpen}
+        onClose={() => setOfferOpen(false)}
       />
       <SaveModal
         propertyId={property.id}

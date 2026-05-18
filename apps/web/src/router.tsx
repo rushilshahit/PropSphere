@@ -21,9 +21,25 @@ const SavedSearchesPage = lazy(() =>
   import('./features/alerts/pages/SavedSearchesPage'),
 );
 
+const RecentlyViewedPage = lazy(() =>
+  import('./features/account/pages/RecentlyViewedPage'),
+);
+
+const EnquiryHistoryPage = lazy(() =>
+  import('./features/account/pages/EnquiryHistoryPage'),
+);
+
+const OfferHistoryPage = lazy(() =>
+  import('./features/account/pages/OfferHistoryPage'),
+);
+
 const FinancePage = lazy(() => import('./features/finance/pages/FinancePage'));
 
 const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
+
+const AgentPage = lazy(() => import('./features/agent/pages/AgentPage'));
+
+const AgencyPage = lazy(() => import('./features/agency/pages/AgencyPage'));
 
 const SuburbPage = lazy(() => import('./features/suburb/pages/SuburbPage'));
 
@@ -146,13 +162,58 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
       },
-      { path: 'agent/:slug', element: <StubPage label="Agent Profile" /> },
+      {
+        path: 'agent/:slug',
+        element: (
+          <Suspense fallback={<Loading />}>
+            <AgentPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'agency/:slug',
+        element: (
+          <Suspense fallback={<Loading />}>
+            <AgencyPage />
+          </Suspense>
+        ),
+      },
       {
         path: 'finance',
         element: (
           <Suspense fallback={<Loading />}>
             <FinancePage />
           </Suspense>
+        ),
+      },
+      {
+        path: 'account/history',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <RecentlyViewedPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'account/enquiries',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <EnquiryHistoryPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'account/offers',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <OfferHistoryPage />
+            </Suspense>
+          </ProtectedRoute>
         ),
       },
       { path: 'account/*', element: <StubPage label="Account" /> },

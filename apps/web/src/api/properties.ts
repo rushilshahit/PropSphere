@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import type { PropertyDetail, PropertyMapPin, PropertySummary, SearchFilters, SearchResult } from '@propsphere/types';
+import { supabase } from '@/lib/supabase';
 
 async function fetchProperties(
   filters: SearchFilters,
@@ -76,6 +77,27 @@ export function useMapProperties(bbox: MapBbox | null) {
     queryFn: () => fetchMapProperties(bbox!),
     enabled: bbox !== null,
     staleTime: 20_000,
+  });
+}
+
+export function useBatchProperties(ids: string[]) {
+  return useQuery({
+    queryKey: ['properties', 'batch', ids],
+    queryFn: async (): Promise<PropertySummary[]> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/properties/batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error('Failed to fetch properties batch');
+      return res.json() as Promise<PropertySummary[]>;
+    },
+    enabled: ids.length > 0,
+    staleTime: 60_000,
   });
 }
 

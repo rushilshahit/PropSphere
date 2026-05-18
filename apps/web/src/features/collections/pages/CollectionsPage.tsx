@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Plus, Share2, BookmarkX } from 'lucide-react';
-import { useCollections, useCollectionProperties, useCreateCollection, useRemoveFromCollection, useDeleteCollection } from '@/api/collections';
+import { Plus, Share2, BookmarkX, PenLine } from 'lucide-react';
+import { useCollections, useCollectionProperties, useCreateCollection, useRemoveFromCollection, useDeleteCollection, useUpdateCollectionNote } from '@/api/collections';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addToCompare, removeFromCompare, selectCompareIds } from '@/features/collections/store/collectionsSlice';
 import { PropertyCard } from '@/features/search/components/PropertyCard';
 import { useToast } from '@/components/providers/ToastProvider';
-import { Spinner } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 
 export default function CollectionsPage() {
   const dispatch = useAppDispatch();
@@ -15,10 +15,14 @@ export default function CollectionsPage() {
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewInput, setShowNewInput] = useState(false);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [noteValue, setNoteValue] = useState('');
+
   const { data: collections = [], isLoading: loadingCollections } = useCollections();
   const { mutate: createCollection } = useCreateCollection();
   const { mutate: deleteCollection } = useDeleteCollection();
   const { mutate: removeFromCollection } = useRemoveFromCollection();
+  const { mutate: updateNote, isPending: savingNote } = useUpdateCollectionNote();
 
   const resolvedCollectionId =
     activeCollectionId ??
@@ -45,6 +49,19 @@ export default function CollectionsPage() {
     const url = `${window.location.origin}/collections/shared/${activeCollection.share_token}`;
     void navigator.clipboard.writeText(url);
     toast('Share link copied!', 'success');
+  }
+
+  function handleSaveNote(propertyId: string) {
+    if (!resolvedCollectionId) return;
+    updateNote(
+      { collectionId: resolvedCollectionId, propertyId, notes: noteValue },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          toast('Note saved', 'success');
+        },
+      },
+    );
   }
 
   function handleRemoveProperty(propertyId: string) {
@@ -183,8 +200,9 @@ export default function CollectionsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {properties.map((property) => {
+            {(properties as Array<typeof properties[0] & { notes?: string | null }>).map((property) => {
               const isCompared = compareIds.includes(property.id);
+              const isEditingNote = editingId === property.id;
               return (
                 <div key={property.id} className="relative">
                   <PropertyCard property={property} />
@@ -213,6 +231,58 @@ export default function CollectionsPage() {
                   >
                     <BookmarkX className="w-4 h-4" />
                   </button>
+
+                  {/* Inline note editor */}
+                  <div className="mt-2 px-1">
+                    {isEditingNote ? (
+                      <div>
+                        <textarea
+                          className="w-full text-sm border border-neutral-300 rounded-btn p-2 resize-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary focus:outline-none"
+                          maxLength={500}
+                          rows={3}
+                          value={noteValue}
+                          onChange={(e) => setNoteValue(e.target.value)}
+                          autoFocus
+                        />
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-neutral-400">{noteValue.length}/500</span>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingId(null)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              loading={savingNote}
+                              onClick={() => handleSaveNote(property.id)}
+                            >
+                              Save note
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(property.id);
+                          setNoteValue(property.notes ?? '');
+                        }}
+                        className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
+                      >
+                        <PenLine className="w-3 h-3" />
+                        {property.notes ? 'Edit note' : 'Add note'}
+                      </button>
+                    )}
+                    {property.notes && !isEditingNote && (
+                      <p className="text-xs text-neutral-500 italic mt-1 line-clamp-2">
+                        {property.notes}
+                      </p>
+                    )}
+                  </div>
                 </div>
               );
             })}
