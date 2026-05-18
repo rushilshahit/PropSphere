@@ -80,6 +80,7 @@ export interface PropertySummary {
   sold_price_is_confidential?: boolean;
   under_contract_at?: string;
   next_inspection_at?: string;
+  auction_at?: string | null;
 }
 
 export interface PropertyDetail extends PropertySummary {
