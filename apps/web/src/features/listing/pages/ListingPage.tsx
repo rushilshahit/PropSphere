@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Bookmark, Share2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import type { MapRef } from 'react-map-gl/maplibre';
-import { formatPrice } from '@propsphere/utils';
 import { useProperty, useIncrementViewCount } from '@/api/properties';
 import type { NearbyPlace } from '@/api/overpass';
 import { Button, Skeleton } from '@/components/ui';
@@ -21,6 +20,10 @@ import { SimilarProperties } from '../components/SimilarProperties';
 import { StreetView } from '../components/StreetView';
 import { NearbyPlaces } from '../components/NearbyPlaces';
 import { CommuteCalculator } from '../components/CommuteCalculator';
+import { ActivePricePanel } from '../components/ActivePricePanel';
+import { SoldPricePanel } from '../components/SoldPricePanel';
+import { PriceHistoryChart } from '../components/PriceHistoryChart';
+import { AppraisalCTA } from '../components/AppraisalCTA';
 
 function buildAddress(property: {
   unit_number: string | null;
@@ -39,11 +42,6 @@ function buildAddress(property: {
   ]
     .filter(Boolean)
     .join(' ');
-}
-
-function daysOnMarket(publishedAt: string | null): number {
-  if (!publishedAt) return 0;
-  return Math.floor((Date.now() - new Date(publishedAt).getTime()) / 86_400_000);
 }
 
 function PageSkeleton() {
@@ -90,11 +88,7 @@ export default function ListingPage() {
   }
 
   const address = buildAddress(property);
-  const dom = daysOnMarket(property.published_at);
-
-  const priceLabel = property.is_price_hidden
-    ? 'Contact agent'
-    : property.price_display ?? (property.price ? formatPrice(property.price) : 'Contact agent');
+  const isSold = property.status === 'sold';
 
   return (
     <>
@@ -137,11 +131,32 @@ export default function ListingPage() {
 
             <FeaturesList features={property.features} />
 
-            <InspectionTimes inspections={property.inspections} address={address} />
-
-            {property.auction_at && <AuctionCountdown auctionAt={property.auction_at} />}
+            {!isSold && (
+              <>
+                <InspectionTimes inspections={property.inspections} address={address} />
+                {property.auction_at && <AuctionCountdown auctionAt={property.auction_at} />}
+              </>
+            )}
 
             <SoldHistory soldAt={property.sold_at} soldPrice={property.sold_price} />
+
+            {isSold && (
+              <>
+                <section>
+                  <h3 className="text-lg font-bold text-neutral-900 mb-4">Price History</h3>
+                  <PriceHistoryChart
+                    propertyId={property.id}
+                    currentPrice={property.sold_price ?? undefined}
+                  />
+                </section>
+
+                <AppraisalCTA
+                  suburb={property.suburb}
+                  agentId={property.agent_id}
+                  propertyId={property.id}
+                />
+              </>
+            )}
 
             <SimilarProperties propertyId={property.id} />
 
@@ -171,36 +186,24 @@ export default function ListingPage() {
 
           <div className="space-y-4">
             <div className="lg:sticky lg:top-24 space-y-4">
-              <div className="bg-white border border-neutral-200 rounded-card p-5">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <p className="text-3xl font-bold text-neutral-900 tabular-nums">{priceLabel}</p>
-                  {dom > 0 && (
-                    <span className="shrink-0 text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded-badge font-medium mt-1">
-                      {dom}d on market
-                    </span>
-                  )}
-                </div>
-
-                <p className="text-sm text-neutral-500 capitalize mb-4">
-                  {property.property_type.replace('_', ' ')} · For {property.listing_type}
-                </p>
-
-                <div className="flex flex-col gap-2">
-                  <Button size="lg" className="w-full" onClick={() => setEnquiryOpen(true)}>
-                    Enquire now
-                  </Button>
-                  {isAuthenticated && (
-                    <Button variant="secondary" size="lg" className="w-full" onClick={toggle}>
-                      <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-                      {isSaved ? 'Saved' : 'Save property'}
+              {isSold ? (
+                <>
+                  <SoldPricePanel property={property} />
+                  <Link to={`/agent/${property.agent_id}`} className="block">
+                    <Button variant="secondary" size="lg" className="w-full">
+                      View agent profile
                     </Button>
-                  )}
-                  <Button variant="ghost" size="sm" className="w-full">
-                    <Share2 className="w-4 h-4" />
-                    Share
-                  </Button>
-                </div>
-              </div>
+                  </Link>
+                </>
+              ) : (
+                <ActivePricePanel
+                  property={property}
+                  isSaved={isSaved}
+                  isAuthenticated={isAuthenticated}
+                  onEnquire={() => setEnquiryOpen(true)}
+                  onSave={toggle}
+                />
+              )}
 
               <AgentCard
                 agent={property.agent}
@@ -212,13 +215,15 @@ export default function ListingPage() {
         </div>
       </div>
 
-      <EnquiryModal
-        propertyId={property.id}
-        agentId={property.agent_id}
-        agentName={property.agent?.full_name ?? undefined}
-        isOpen={enquiryOpen}
-        onClose={() => setEnquiryOpen(false)}
-      />
+      {!isSold && (
+        <EnquiryModal
+          propertyId={property.id}
+          agentId={property.agent_id}
+          agentName={property.agent?.full_name ?? undefined}
+          isOpen={enquiryOpen}
+          onClose={() => setEnquiryOpen(false)}
+        />
+      )}
       <SaveModal
         propertyId={property.id}
         isOpen={saveModalOpen}
