@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
-import type { CreateCollectionDto, AddPropertyDto } from './dto/collections.dto';
+import type { CreateCollectionDto, AddPropertyDto, UpdateNoteDto } from './dto/collections.dto';
 
 export interface DbCollection {
   id: string;
@@ -92,12 +92,14 @@ export class CollectionsService {
 
     const { data: cpRows, error: cpErr } = await this.supabase.client
       .from('collection_properties')
-      .select('property_id')
+      .select('property_id, notes')
       .eq('collection_id', collectionId)
       .order('added_at', { ascending: false });
 
     if (cpErr) throw cpErr;
-    const propertyIds = ((cpRows ?? []) as { property_id: string }[]).map((r) => r.property_id);
+    const cpTyped = (cpRows ?? []) as { property_id: string; notes: string | null }[];
+    const propertyIds = cpTyped.map((r) => r.property_id);
+    const notesByPropertyId = new Map(cpTyped.map((r) => [r.property_id, r.notes]));
 
     if (!propertyIds.length) {
       return { ...collection, properties: [] };
@@ -134,6 +136,7 @@ export class CollectionsService {
     const enrichedProperties = ((properties ?? []) as Array<{ id: string } & Record<string, unknown>>).map((p) => ({
       ...p,
       images: imagesByProperty[p.id] ?? [],
+      notes: notesByPropertyId.get(p.id) ?? null,
     }));
 
     return { ...collection, properties: enrichedProperties };
@@ -157,6 +160,23 @@ export class CollectionsService {
 
     if (error) throw error;
     return data as DbCollectionProperty;
+  }
+
+  async updatePropertyNote(
+    userId: string,
+    collectionId: string,
+    propertyId: string,
+    dto: UpdateNoteDto,
+  ): Promise<void> {
+    await this.getCollectionOrThrow(userId, collectionId);
+
+    const { error } = await this.supabase.client
+      .from('collection_properties')
+      .update({ notes: dto.notes.slice(0, 500) })
+      .eq('collection_id', collectionId)
+      .eq('property_id', propertyId);
+
+    if (error) throw error;
   }
 
   async removePropertyFromCollection(
