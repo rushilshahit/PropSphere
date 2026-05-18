@@ -10,6 +10,7 @@ import { EnquiriesModule } from './modules/enquiries/enquiries.module';
 import { HomeModule } from './modules/home/home.module';
 import { MapsModule } from './modules/maps/maps.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { OffersModule } from './modules/offers/offers.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { SavedSearchesModule } from './modules/saved-searches/saved-searches.module';
 import { SchoolsModule } from './modules/schools/schools.module';
@@ -36,6 +37,7 @@ import { SuburbsModule } from './modules/suburbs/suburbs.module';
     CollectionsModule,
     SavedSearchesModule,
     NotificationsModule,
+    OffersModule,
   ],
   providers: [SupabaseService],
   exports: [SupabaseService],

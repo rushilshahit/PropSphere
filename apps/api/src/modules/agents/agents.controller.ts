@@ -1,9 +1,56 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../../common/guards/auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AgentsService } from './agents.service';
+
+interface AuthUser {
+  id: string;
+}
 
 @Controller('agents')
 export class AgentsController {
   constructor(private readonly agentsService: AgentsService) {}
+
+  // Protected "me" routes must come before any dynamic :id segments
+  @Get('me/stats')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('agent')
+  async getMyStats(@CurrentUser() user: AuthUser) {
+    const agent = await this.agentsService.findByProfileId(user.id);
+    return this.agentsService.getMyStats(agent.id);
+  }
+
+  @Get('me/listings')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('agent')
+  async getMyListings(
+    @CurrentUser() user: AuthUser,
+    @Query('status') status?: string,
+  ) {
+    const agent = await this.agentsService.findByProfileId(user.id);
+    return this.agentsService.getMyListings(agent.id, status);
+  }
+
+  @Get('me/enquiries')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('agent')
+  async getMyEnquiries(
+    @CurrentUser() user: AuthUser,
+    @Query('page') page?: string,
+  ) {
+    const agent = await this.agentsService.findByProfileId(user.id);
+    return this.agentsService.getMyEnquiries(agent.id, page ? parseInt(page, 10) : 1);
+  }
+
+  @Get('me/offers')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('agent')
+  async getMyOffers(@CurrentUser() user: AuthUser) {
+    const agent = await this.agentsService.findByProfileId(user.id);
+    return this.agentsService.getMyOffers(agent.id);
+  }
 
   @Get()
   listAgents(
