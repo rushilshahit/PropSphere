@@ -118,6 +118,12 @@ export default function ListingPage() {
               {property.headline && (
                 <p className="text-neutral-500 mt-1">{property.headline}</p>
               )}
+              <Link
+                to={`/suburb/${property.state.toLowerCase()}/${property.suburb.toLowerCase().replace(/\s+/g, '-')}`}
+                className="text-sm text-brand-primary hover:underline mt-1 inline-block"
+              >
+                Explore {property.suburb} →
+              </Link>
             </div>
 
             <PropertyStats property={property} />
