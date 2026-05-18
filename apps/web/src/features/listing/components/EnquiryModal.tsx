@@ -18,14 +18,14 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 interface EnquiryModalProps {
-  propertyId: string;
+  propertyId?: string;
   agentId: string;
   agentName?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function EnquiryModal({ propertyId, agentId, agentName, isOpen, onClose }: EnquiryModalProps) {
+export function EnquiryModal({ propertyId = '', agentId, agentName, isOpen, onClose }: EnquiryModalProps) {
   const { toast } = useToast();
   const { user, session } = useAuth();
   const { mutate, isPending, error } = useCreateEnquiry();

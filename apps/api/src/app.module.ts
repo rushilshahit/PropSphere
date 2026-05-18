@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { configuration } from './config/configuration';
 import { SupabaseService } from './database/supabase.service';
 import { AdminModule } from './modules/admin/admin.module';
+import { AgenciesModule } from './modules/agencies/agencies.module';
 import { AgentsModule } from './modules/agents/agents.module';
 import { CollectionsModule } from './modules/collections/collections.module';
 import { EnquiriesModule } from './modules/enquiries/enquiries.module';
@@ -28,6 +29,7 @@ import { SuburbsModule } from './modules/suburbs/suburbs.module';
       inject: [ConfigService],
     }),
     AdminModule,
+    AgenciesModule,
     AgentsModule,
     HomeModule,
     MapsModule,
