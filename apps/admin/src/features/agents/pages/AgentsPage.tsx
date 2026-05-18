@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { deactivateAgent, exportAllAgents, listAgents } from '@/api/admin';
+import { approveAgent, deactivateAgent, exportAllAgents, listAgents } from '@/api/admin';
 import { exportToCsv } from '@/lib/csv';
 import { Badge, Button, Card, Pagination, Table } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -23,6 +23,17 @@ export default function AgentsPage() {
     onSuccess: () => {
       toast('Agent deactivated', 'success');
       qc.invalidateQueries({ queryKey: ['admin', 'agents'] });
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: approveAgent,
+    onSuccess: () => {
+      toast('Agent approved', 'success');
+      qc.invalidateQueries({ queryKey: ['admin', 'agents'] });
+    },
+    onError: (err) => {
+      toast(err instanceof Error ? err.message : 'Approval failed', 'error');
     },
   });
 
@@ -84,22 +95,39 @@ export default function AgentsPage() {
             {
               key: 'is_active',
               header: 'Status',
-              render: (r) => (
-                <Badge variant={r.is_active ? 'success' : 'default'}>
-                  {r.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              ),
+              render: (r) => {
+                if (r.profile_role === 'pending_agent') {
+                  return <Badge variant="warning">Pending Approval</Badge>;
+                }
+                return (
+                  <Badge variant={r.is_active ? 'success' : 'default'}>
+                    {r.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                );
+              },
             },
             {
               key: 'actions',
               header: '',
-              className: 'w-32',
+              className: 'w-40',
               render: (r) => (
                 <div className="flex gap-2">
                   <Button size="sm" variant="ghost" onClick={() => navigate(`/agents/${r.id}/edit`)}>
                     Edit
                   </Button>
-                  {r.is_active && (
+                  {r.profile_role === 'pending_agent' && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      loading={approveMutation.isPending}
+                      onClick={() => {
+                        if (confirm(`Approve ${r.full_name ?? 'this agent'}?`)) approveMutation.mutate(r.id);
+                      }}
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  {r.is_active && r.profile_role !== 'pending_agent' && (
                     <Button
                       size="sm"
                       variant="danger"
