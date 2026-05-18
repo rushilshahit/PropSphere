@@ -21,6 +21,14 @@ const SavedSearchesPage = lazy(() =>
   import('./features/alerts/pages/SavedSearchesPage'),
 );
 
+const RecentlyViewedPage = lazy(() =>
+  import('./features/account/pages/RecentlyViewedPage'),
+);
+
+const EnquiryHistoryPage = lazy(() =>
+  import('./features/account/pages/EnquiryHistoryPage'),
+);
+
 const FinancePage = lazy(() => import('./features/finance/pages/FinancePage'));
 
 const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
@@ -153,6 +161,26 @@ export const router = createBrowserRouter([
           <Suspense fallback={<Loading />}>
             <FinancePage />
           </Suspense>
+        ),
+      },
+      {
+        path: 'account/history',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <RecentlyViewedPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'account/enquiries',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <EnquiryHistoryPage />
+            </Suspense>
+          </ProtectedRoute>
         ),
       },
       { path: 'account/*', element: <StubPage label="Account" /> },

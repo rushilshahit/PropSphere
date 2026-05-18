@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Share2 } from 'lucide-react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { formatPrice } from '@propsphere/utils';
 import { useProperty, useIncrementViewCount } from '@/api/properties';
 import type { NearbyPlace } from '@/api/overpass';
+import { supabase } from '@/lib/supabase';
 import { Button, Skeleton } from '@/components/ui';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useSaveProperty } from '@/features/collections/hooks/useSaveProperty';
@@ -39,6 +40,32 @@ function buildAddress(property: {
   ]
     .filter(Boolean)
     .join(' ');
+}
+
+function useTrackRecentlyViewed(propertyId: string) {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!propertyId) return;
+
+    const stored = localStorage.getItem('rv');
+    const viewed: string[] = stored ? (JSON.parse(stored) as string[]) : [];
+    const updated = [propertyId, ...viewed.filter((id) => id !== propertyId)].slice(0, 20);
+    localStorage.setItem('rv', JSON.stringify(updated));
+
+    if (user) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        fetch('/api/users/recently-viewed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ propertyId }),
+        }).catch(() => {});
+      }).catch(() => {});
+    }
+  }, [propertyId]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 function daysOnMarket(publishedAt: string | null): number {
@@ -76,6 +103,7 @@ export default function ListingPage() {
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(id!);
   const { data: property, isLoading, isError } = useProperty(id!);
   useIncrementViewCount(id!);
+  useTrackRecentlyViewed(id!);
 
   if (isLoading) return <PageSkeleton />;
 
