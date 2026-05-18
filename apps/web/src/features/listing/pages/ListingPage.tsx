@@ -108,7 +108,12 @@ export default function ListingPage() {
         </Link>
 
         <div className="mb-6">
-          <PhotoGallery images={property.images} />
+          <PhotoGallery
+            images={property.images}
+            virtualTourUrl={property.virtual_tour_url}
+            lat={property.lat}
+            lng={property.lng}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
