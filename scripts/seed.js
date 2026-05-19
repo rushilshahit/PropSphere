@@ -76,16 +76,16 @@ async function seed() {
   `);
 
   const agentRes1 = await client.query(`
-    INSERT INTO agents (profile_id, agency_id, license_no, bio, years_active)
-    VALUES ($1,$2,'RERA-GJ-AG-1001','Specialising in luxury apartments across West Ahmedabad with 8 years of experience.',8) RETURNING id;
+    INSERT INTO agents (profile_id, agency_id, slug, license_no, bio, years_active, is_verified)
+    VALUES ($1,$2,'riya-shah','RERA-GJ-AG-1001','Specialising in luxury apartments across West Ahmedabad with 8 years of experience.',8,true) RETURNING id;
   `, [profileRes1.rows[0].id, agencyId]);
   const agentRes2 = await client.query(`
-    INSERT INTO agents (profile_id, agency_id, license_no, bio, years_active)
-    VALUES ($1,$2,'RERA-GJ-AG-1002','Expert in residential plots and villas across North Ahmedabad growth corridors.',5) RETURNING id;
+    INSERT INTO agents (profile_id, agency_id, slug, license_no, bio, years_active, is_verified)
+    VALUES ($1,$2,'arjun-mehta','RERA-GJ-AG-1002','Expert in residential plots and villas across North Ahmedabad growth corridors.',5,true) RETURNING id;
   `, [profileRes2.rows[0].id, agencyId]);
   const agentRes3 = await client.query(`
-    INSERT INTO agents (profile_id, agency_id, license_no, bio, years_active)
-    VALUES ($1,$2,'RERA-GJ-AG-1003','Rental specialist with deep knowledge of Central and South Ahmedabad markets.',6) RETURNING id;
+    INSERT INTO agents (profile_id, agency_id, slug, license_no, bio, years_active, is_verified)
+    VALUES ($1,$2,'priya-patel','RERA-GJ-AG-1003','Rental specialist with deep knowledge of Central and South Ahmedabad markets.',6,true) RETURNING id;
   `, [profileRes3.rows[0].id, agencyId]);
 
   const agent1 = agentRes1.rows[0].id;
@@ -542,6 +542,303 @@ async function seed() {
       description: 'Charming apartment a short walk from the iconic Kankaria Lake. Perfect for families who love outdoor living. Renovated kitchen and bathrooms with modern fixtures. Society is peaceful and child-friendly. Great connectivity via BRTS.',
       features: { indoor: ['Air Conditioning','Renovated Kitchen','Wardrobes'], outdoor: ['Society Parking','Children Play Area','Garden'], climate: ['Air Conditioning','Ceiling Fans'] },
       published_at: '2026-04-21', is_featured: false,
+    },
+
+    // ── SOLD PROPERTIES (25 records) ──────────────────────────────────────────
+
+    // Navrangpura sold
+    {
+      agent: agent1, suburb_slug: 'navrangpura', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '14', street_name: 'Panchvati Road', suburb: 'Navrangpura', postcode: '380009',
+      lat: 23.0408, lng: 72.5580, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 105,
+      price: 7200000, price_display: '₹72 L',
+      headline: 'SOLD — 2 BHK on Panchvati Road, Navrangpura',
+      description: 'Bright 2 BHK in a sought-after Navrangpura address. Sold within 18 days of listing.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen'], outdoor: ['Society Parking','Lift'], climate: ['Air Conditioning'] },
+      published_at: '2026-01-05', sold_at: '2026-01-23', sold_price: 7050000, is_featured: false,
+    },
+    {
+      agent: agent3, suburb_slug: 'navrangpura', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '9', street_name: 'CG Road', suburb: 'Navrangpura', postcode: '380009',
+      lat: 23.0388, lng: 72.5555, bedrooms: 3, bathrooms: 2, car_spaces: 2, land_size: 0, build_size: 152,
+      price: 9500000, price_display: '₹95 L',
+      headline: 'SOLD — 3 BHK on CG Road',
+      description: 'Prime CG Road apartment sold at above asking. One of the fastest closures in the precinct.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Wardrobes'], outdoor: ['Swimming Pool','Security'], climate: ['Air Conditioning'] },
+      published_at: '2025-11-10', sold_at: '2025-11-28', sold_price: 9600000, is_featured: false,
+    },
+    {
+      agent: agent2, suburb_slug: 'navrangpura', listing_type: 'buy', property_type: 'house',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '3', street_name: 'Nehru Park Bungalows', suburb: 'Navrangpura', postcode: '380009',
+      lat: 23.0395, lng: 72.5598, bedrooms: 4, bathrooms: 3, car_spaces: 2, land_size: 280, build_size: 330,
+      price: 22000000, price_display: '₹2.2 Cr',
+      headline: 'SOLD — 4 BHK Bungalow Near Nehru Park',
+      description: 'Prestigious bungalow in the quietest pocket of Navrangpura. Sold after competitive offers from three buyers.',
+      features: { indoor: ['Smart Home','Modular Kitchen','Servant Quarter'], outdoor: ['Private Garden','Covered Parking'], climate: ['Central AC'] },
+      published_at: '2025-10-01', sold_at: '2025-10-22', sold_price: 21500000, is_featured: false,
+    },
+
+    // Satellite sold
+    {
+      agent: agent1, suburb_slug: 'satellite', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '8', street_name: 'Jodhpur Village Road', suburb: 'Satellite', postcode: '380015',
+      lat: 23.0240, lng: 72.5082, bedrooms: 3, bathrooms: 2, car_spaces: 2, land_size: 0, build_size: 162,
+      price: 11500000, price_display: '₹1.15 Cr',
+      headline: 'SOLD — 3 BHK in Jodhpur Village Road, Satellite',
+      description: 'Well-appointed 3 BHK in the Satellite premium corridor. Closed in under three weeks.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Wardrobes'], outdoor: ['Pool','Gymnasium','Security'], climate: ['Air Conditioning'] },
+      published_at: '2026-02-01', sold_at: '2026-02-19', sold_price: 11200000, is_featured: false,
+    },
+    {
+      agent: agent3, suburb_slug: 'satellite', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '3A', street_name: 'Anandnagar Cross Road', suburb: 'Satellite', postcode: '380015',
+      lat: 23.0255, lng: 72.5095, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 112,
+      price: 8800000, price_display: '₹88 L',
+      headline: 'SOLD — 2 BHK, Anandnagar Cross Road',
+      description: 'Compact yet luxurious 2 BHK that attracted multiple offers on the first weekend.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen'], outdoor: ['Gymnasium','Covered Parking'], climate: ['Air Conditioning'] },
+      published_at: '2026-03-01', sold_at: '2026-03-14', sold_price: 9000000, is_featured: false,
+    },
+    {
+      agent: agent2, suburb_slug: 'satellite', listing_type: 'buy', property_type: 'house',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '12', street_name: 'Panchwati Society Satellite', suburb: 'Satellite', postcode: '380015',
+      lat: 23.0268, lng: 72.5108, bedrooms: 5, bathrooms: 4, car_spaces: 3, land_size: 380, build_size: 450,
+      price: 30000000, price_display: '₹3 Cr',
+      headline: 'SOLD — Trophy Villa in Satellite',
+      description: 'Iconic standalone villa in Satellite. Sold at ₹3 Cr — a landmark transaction for the suburb.',
+      features: { indoor: ['Smart Home','Home Theatre','Italian Marble','Staff Quarter'], outdoor: ['Private Pool','Landscaped Garden','4-Car Garage'], climate: ['Central AC'] },
+      published_at: '2025-09-15', sold_at: '2025-10-10', sold_price: 29500000, is_featured: false,
+    },
+
+    // Bopal sold
+    {
+      agent: agent2, suburb_slug: 'bopal', listing_type: 'buy', property_type: 'house',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '4', street_name: 'Shivalik Bungalows Phase 2', suburb: 'Bopal', postcode: '380058',
+      lat: 23.0320, lng: 72.4660, bedrooms: 4, bathrooms: 3, car_spaces: 2, land_size: 260, build_size: 300,
+      price: 13500000, price_display: '₹1.35 Cr',
+      headline: 'SOLD — 4 BHK Bungalow in Shivalik Phase 2, Bopal',
+      description: 'Spacious bungalow in Bopal\'s most established row-house scheme. Sold above asking.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Pooja Room'], outdoor: ['Private Garden','Covered Parking'], climate: ['Air Conditioning'] },
+      published_at: '2026-01-10', sold_at: '2026-02-05', sold_price: 13800000, is_featured: false,
+    },
+    {
+      agent: agent3, suburb_slug: 'bopal', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '22', street_name: 'Bopal-Ghuma Main Road', suburb: 'Bopal', postcode: '380058',
+      lat: 23.0338, lng: 72.4678, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 96,
+      price: 6500000, price_display: '₹65 L',
+      headline: 'SOLD — 2 BHK in Bopal Township',
+      description: 'First-home buyer favourite in Bopal. Strong capital growth area.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen'], outdoor: ['Society Parking','Lift'], climate: ['Air Conditioning','Ceiling Fans'] },
+      published_at: '2026-02-20', sold_at: '2026-03-08', sold_price: 6400000, is_featured: false,
+    },
+    {
+      agent: agent1, suburb_slug: 'bopal', listing_type: 'buy', property_type: 'land',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: 'Plot 7', street_name: 'Aavkar Greens Phase 2', suburb: 'Bopal', postcode: '380058',
+      lat: 23.0360, lng: 72.4710, bedrooms: 0, bathrooms: 0, car_spaces: 0, land_size: 180, build_size: 0,
+      price: 4800000, price_display: '₹48 L',
+      headline: 'SOLD — NA Plot 180 sqm in Bopal Layout',
+      description: 'Corner NA plot sold to a family planning to construct a custom bungalow.',
+      features: { indoor: [], outdoor: ['NA Approved','Paved Roads','Water Connection'], climate: [] },
+      published_at: '2026-01-18', sold_at: '2026-01-30', sold_price: 4700000, is_featured: false,
+    },
+
+    // Vastrapur sold
+    {
+      agent: agent3, suburb_slug: 'vastrapur', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '10', street_name: 'Judges Bungalow Cross Road', suburb: 'Vastrapur', postcode: '380015',
+      lat: 23.0370, lng: 72.5240, bedrooms: 3, bathrooms: 2, car_spaces: 2, land_size: 0, build_size: 168,
+      price: 10800000, price_display: '₹1.08 Cr',
+      headline: 'SOLD — Lake-View 3 BHK, Vastrapur',
+      description: 'Rare lake-view apartment in Vastrapur. Sold within days of listing to an NRI buyer.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Walk-in Wardrobe'], outdoor: ['Private Lift Lobby','Pool'], climate: ['Central AC'] },
+      published_at: '2025-12-01', sold_at: '2025-12-15', sold_price: 11000000, is_featured: false,
+    },
+    {
+      agent: agent1, suburb_slug: 'vastrapur', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '33', street_name: 'Vastrapur Lake Road', suburb: 'Vastrapur', postcode: '380015',
+      lat: 23.0368, lng: 72.5225, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 98,
+      price: 8200000, price_display: '₹82 L',
+      headline: 'SOLD — 2 BHK Overlooking Vastrapur Lake',
+      description: 'Peaceful lake-facing 2 BHK that sold at full asking price.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen'], outdoor: ['Gymnasium','Jogging Track'], climate: ['Air Conditioning'] },
+      published_at: '2026-03-05', sold_at: '2026-03-20', sold_price: 8200000, is_featured: false,
+    },
+
+    // Prahlad Nagar sold
+    {
+      agent: agent2, suburb_slug: 'prahlad-nagar', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'auction',
+      street_number: '6', street_name: 'Corporate Road South', suburb: 'Prahlad Nagar', postcode: '380015',
+      lat: 23.0162, lng: 72.5062, bedrooms: 3, bathrooms: 3, car_spaces: 2, land_size: 0, build_size: 165,
+      price: 13000000, price_display: '₹1.3 Cr',
+      headline: 'SOLD Under Hammer — 3 BHK, Prahlad Nagar',
+      description: 'Auctioned property that attracted 6 registered bidders. Sold ₹12 L above reserve.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Video Door Phone'], outdoor: ['Spa','Infinity Pool','Concierge'], climate: ['Central AC'] },
+      published_at: '2026-01-25', sold_at: '2026-02-22', sold_price: 13200000, is_featured: false,
+    },
+    {
+      agent: agent1, suburb_slug: 'prahlad-nagar', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '20', street_name: 'Iscon Cross Road', suburb: 'Prahlad Nagar', postcode: '380015',
+      lat: 23.0148, lng: 72.5045, bedrooms: 4, bathrooms: 3, car_spaces: 3, land_size: 0, build_size: 255,
+      price: 20000000, price_display: '₹2 Cr',
+      headline: 'SOLD — 4 BHK Sky Suite, Prahlad Nagar',
+      description: 'Ultra-premium sky suite that set a new price record for the precinct.',
+      features: { indoor: ['Smart Home','Private Elevator','12-ft Ceilings'], outdoor: ['Tennis Court','Fine Dining','Bowling Alley'], climate: ['Central AC','Radiant Heating'] },
+      published_at: '2025-08-10', sold_at: '2025-09-05', sold_price: 19800000, is_featured: false,
+    },
+
+    // SG Highway sold
+    {
+      agent: agent3, suburb_slug: 'sg-highway', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '606', street_name: 'SGRD Complex', suburb: 'SG Highway', postcode: '380054',
+      lat: 23.0578, lng: 72.5050, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 108,
+      price: 7400000, price_display: '₹74 L',
+      headline: 'SOLD — 2 BHK on SG Highway',
+      description: 'Investment-grade apartment near GIFT City. Sold to a corporate buyer.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen'], outdoor: ['Swimming Pool','Gymnasium'], climate: ['Air Conditioning'] },
+      published_at: '2026-02-10', sold_at: '2026-02-28', sold_price: 7300000, is_featured: false,
+    },
+    {
+      agent: agent2, suburb_slug: 'sg-highway', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '902', street_name: 'Sindhu Bhavan Marg', suburb: 'SG Highway', postcode: '380054',
+      lat: 23.0568, lng: 72.5035, bedrooms: 4, bathrooms: 3, car_spaces: 2, land_size: 0, build_size: 218,
+      price: 12000000, price_display: '₹1.2 Cr',
+      headline: 'SOLD — Luxury 4 BHK High-Rise, SG Highway',
+      description: 'Landmark high-rise apartment with sunset views. Sold to an GIFT City executive.',
+      features: { indoor: ['Smart Home','Air Conditioning','Modular Kitchen'], outdoor: ['3-Level Clubhouse','Indoor Sports','Pool'], climate: ['Central AC'] },
+      published_at: '2025-12-20', sold_at: '2026-01-12', sold_price: 11800000, is_featured: false,
+    },
+    {
+      agent: agent1, suburb_slug: 'sg-highway', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '15', street_name: 'SG Road Opp. Times Square', suburb: 'SG Highway', postcode: '380054',
+      lat: 23.0592, lng: 72.5065, bedrooms: 3, bathrooms: 2, car_spaces: 2, land_size: 0, build_size: 160,
+      price: 9000000, price_display: '₹90 L',
+      headline: 'SOLD — 3 BHK Premier Tower, SG Highway',
+      description: 'High-floor apartment with commanding skyline views. Sold in a bidding contest.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Wardrobes'], outdoor: ['Rooftop Lounge','Gymnasium','Co-Working Space'], climate: ['Air Conditioning'] },
+      published_at: '2026-03-12', sold_at: '2026-04-01', sold_price: 9200000, is_featured: false,
+    },
+
+    // Thaltej sold
+    {
+      agent: agent2, suburb_slug: 'thaltej', listing_type: 'buy', property_type: 'house',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '8', street_name: 'Westgate Villas', suburb: 'Thaltej', postcode: '380054',
+      lat: 23.0685, lng: 72.5055, bedrooms: 4, bathrooms: 4, car_spaces: 3, land_size: 350, build_size: 420,
+      price: 22000000, price_display: '₹2.2 Cr',
+      headline: 'SOLD — 4 BHK Villa in Westgate, Thaltej',
+      description: 'Exclusive villa that sold off-market before the official launch.',
+      features: { indoor: ['Italian Marble','Smart Home','Home Office'], outdoor: ['Private Pool','BBQ Area','3-Car Garage'], climate: ['Central AC','Solar Water Heater'] },
+      published_at: '2025-11-01', sold_at: '2025-11-20', sold_price: 22500000, is_featured: false,
+    },
+    {
+      agent: agent3, suburb_slug: 'thaltej', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '52', street_name: 'Thaltej Cross Road', suburb: 'Thaltej', postcode: '380054',
+      lat: 23.0676, lng: 72.5042, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 105,
+      price: 7200000, price_display: '₹72 L',
+      headline: 'SOLD — 2 BHK New Construction, Thaltej',
+      description: 'Brand-new 2 BHK near Thaltej Circle. Sold to first homebuyer within 10 days.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Wardrobes'], outdoor: ['CCTV','Lift','Covered Parking'], climate: ['Air Conditioning'] },
+      published_at: '2026-04-01', sold_at: '2026-04-11', sold_price: 7100000, is_featured: false,
+    },
+
+    // Gota sold
+    {
+      agent: agent1, suburb_slug: 'gota', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '320', street_name: 'Gota Flyover Road', suburb: 'Gota', postcode: '382481',
+      lat: 23.1025, lng: 72.5195, bedrooms: 2, bathrooms: 1, car_spaces: 1, land_size: 0, build_size: 84,
+      price: 4900000, price_display: '₹49 L',
+      headline: 'SOLD — 2 BHK in Gota — First Home Buyer Success',
+      description: 'Sold in 12 days. One of Gota\'s fastest-moving properties this quarter.',
+      features: { indoor: ['Modular Kitchen','Wardrobes'], outdoor: ['Society Parking','Children Play Area'], climate: ['Ceiling Fans'] },
+      published_at: '2026-03-20', sold_at: '2026-04-01', sold_price: 4850000, is_featured: false,
+    },
+    {
+      agent: agent3, suburb_slug: 'gota', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '60', street_name: 'Gota-Chanakyapuri Road', suburb: 'Gota', postcode: '382481',
+      lat: 23.1040, lng: 72.5210, bedrooms: 3, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 128,
+      price: 6000000, price_display: '₹60 L',
+      headline: 'SOLD — 3 BHK Family Apartment, Gota',
+      description: 'Popular family configuration in Gota. Sold to a growing family relocating from Chandkheda.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Wardrobes'], outdoor: ['Lift','Security Guard','Parking'], climate: ['Air Conditioning','Ceiling Fans'] },
+      published_at: '2026-02-05', sold_at: '2026-02-25', sold_price: 5900000, is_featured: false,
+    },
+
+    // Chandkheda sold
+    {
+      agent: agent2, suburb_slug: 'chandkheda', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '50', street_name: 'Chandkheda-Naroda Highway', suburb: 'Chandkheda', postcode: '382424',
+      lat: 23.1182, lng: 72.5850, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 93,
+      price: 4700000, price_display: '₹47 L',
+      headline: 'SOLD — 2 BHK Near Chandkheda Metro',
+      description: 'High-demand rental zone near ISRO and DRDO. Sold as investment property.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen'], outdoor: ['Society Parking','Lift'], climate: ['Air Conditioning','Ceiling Fans'] },
+      published_at: '2026-01-15', sold_at: '2026-02-02', sold_price: 4650000, is_featured: false,
+    },
+    {
+      agent: agent1, suburb_slug: 'chandkheda', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '35', street_name: 'Gyanmanjari Complex', suburb: 'Chandkheda', postcode: '382424',
+      lat: 23.1155, lng: 72.5820, bedrooms: 3, bathrooms: 2, car_spaces: 2, land_size: 0, build_size: 135,
+      price: 5800000, price_display: '₹58 L',
+      headline: 'SOLD — Spacious 3 BHK, Chandkheda',
+      description: 'Well-sized 3 BHK in a quiet Chandkheda society. Sold at full asking to a local family.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Wardrobes'], outdoor: ['Garden','Covered Parking'], climate: ['Air Conditioning','Ceiling Fans'] },
+      published_at: '2026-02-18', sold_at: '2026-03-05', sold_price: 5800000, is_featured: false,
+    },
+
+    // Maninagar sold
+    {
+      agent: agent3, suburb_slug: 'maninagar', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '28', street_name: 'Maninagar Station Road', suburb: 'Maninagar', postcode: '380008',
+      lat: 22.9958, lng: 72.6060, bedrooms: 3, bathrooms: 2, car_spaces: 2, land_size: 0, build_size: 133,
+      price: 7000000, price_display: '₹70 L',
+      headline: 'SOLD — 3 BHK Near Maninagar Station',
+      description: 'Strong railway connectivity made this a sought-after buy. Sold after two inspections.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Wardrobes'], outdoor: ['Lift','Visitor Parking'], climate: ['Air Conditioning','Ceiling Fans'] },
+      published_at: '2026-01-28', sold_at: '2026-02-15', sold_price: 6900000, is_featured: false,
+    },
+    {
+      agent: agent2, suburb_slug: 'maninagar', listing_type: 'buy', property_type: 'house',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '9', street_name: 'Jawahar Nagar', suburb: 'Maninagar', postcode: '380008',
+      lat: 22.9942, lng: 72.6044, bedrooms: 4, bathrooms: 3, car_spaces: 2, land_size: 165, build_size: 200,
+      price: 9500000, price_display: '₹95 L',
+      headline: 'SOLD — 4 BHK Independent House, Maninagar',
+      description: 'Income-generating independent house — both floors rented at time of sale. Sold to an investor.',
+      features: { indoor: ['Air Conditioning','Modular Kitchen','Pooja Room','Storage Room'], outdoor: ['Front Garden','Terrace','Two Parking Spots'], climate: ['Air Conditioning','Ceiling Fans'] },
+      published_at: '2025-12-05', sold_at: '2025-12-28', sold_price: 9300000, is_featured: false,
+    },
+    {
+      agent: agent1, suburb_slug: 'maninagar', listing_type: 'buy', property_type: 'apartment',
+      status: 'sold', sale_method: 'private_treaty',
+      street_number: '70', street_name: 'Kankaria Road', suburb: 'Maninagar', postcode: '380008',
+      lat: 22.9980, lng: 72.6090, bedrooms: 2, bathrooms: 2, car_spaces: 1, land_size: 0, build_size: 97,
+      price: 5500000, price_display: '₹55 L',
+      headline: 'SOLD — 2 BHK Near Kankaria Lake',
+      description: 'Lake-proximity premium — sold within a week of listing.',
+      features: { indoor: ['Air Conditioning','Renovated Kitchen','Wardrobes'], outdoor: ['Society Parking','Children Play Area'], climate: ['Air Conditioning','Ceiling Fans'] },
+      published_at: '2026-04-05', sold_at: '2026-04-12', sold_price: 5600000, is_featured: false,
     },
   ];
 

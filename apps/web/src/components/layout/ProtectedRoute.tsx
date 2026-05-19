@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import type { UserRole } from '@propsphere/types';
 import { useAppSelector } from '@/store/hooks';
 import {
@@ -18,6 +18,7 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const initialized = useAppSelector(selectAuthInitialized);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const userRole = useAppSelector(selectUserRole);
+  const location = useLocation();
 
   if (!initialized) {
     return (
@@ -28,7 +29,7 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace state={{ requireAuth: true, returnTo: location.pathname }} />;
   }
 
   if (roles && userRole && !roles.includes(userRole)) {

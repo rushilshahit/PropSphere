@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
+import type { AgentApplicationDto } from './dto/agent-application.dto';
 
 const PAGE_SIZE = 12;
 const ENQUIRIES_PAGE_SIZE = 20;
@@ -296,6 +297,55 @@ export class AgentsService {
       total,
       totalPages: Math.ceil(total / ENQUIRIES_PAGE_SIZE),
     };
+  }
+
+  async apply(dto: AgentApplicationDto, userId: string): Promise<{ status: string; message: string }> {
+    const { data: existing } = await this.supabase.client
+      .from('agents')
+      .select('id')
+      .eq('profile_id', userId)
+      .maybeSingle();
+    if (existing) throw new ConflictException('An agent application already exists for this account');
+
+    let agencyId = dto.existingAgencyId;
+
+    if (dto.agencyMode === 'create' && dto.newAgency) {
+      const slugBase = dto.newAgency.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const { data: agencyRow, error: agencyErr } = await this.supabase.client
+        .from('agencies')
+        .insert({
+          name: dto.newAgency.name,
+          slug: `${slugBase}-${Date.now()}`,
+          address: dto.newAgency.address,
+          phone: dto.newAgency.phone,
+        })
+        .select('id')
+        .single();
+      if (agencyErr) throw agencyErr;
+      agencyId = (agencyRow as { id: string }).id;
+    }
+
+    const licenseSlug = dto.licenseNo.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const { error: agentErr } = await this.supabase.client.from('agents').insert({
+      profile_id: userId,
+      agency_id: agencyId,
+      license_no: dto.licenseNo,
+      license_doc_url: dto.licenseDocUrl ?? null,
+      bio: dto.bio,
+      years_active: dto.yearsActive,
+      slug: `${licenseSlug}-${Date.now()}`,
+      is_active: false,
+    });
+    if (agentErr) throw agentErr;
+
+    if (dto.avatarUrl) {
+      await this.supabase.client
+        .from('profiles')
+        .update({ avatar_url: dto.avatarUrl })
+        .eq('id', userId);
+    }
+
+    return { status: 'pending', message: 'Application received. We will review within 2 business days.' };
   }
 
   async getMyOffers(agentId: string): Promise<AgentOfferItem[]> {

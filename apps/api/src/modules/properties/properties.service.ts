@@ -3,11 +3,12 @@ import { SupabaseService } from '../../database/supabase.service';
 import { AlertsService } from '../alerts/alerts.service';
 import type { SearchPropertiesDto } from './dto/search-properties.dto';
 import type { BoundingBoxDto } from './dto/bounding-box.dto';
+import type { UpdateStatusDto } from './dto/update-status.dto';
 
 const PAGE_SIZE = 24;
 
 const PROPERTY_SUMMARY_COLS =
-  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, lat, lng, agent_id, agency_id, created_at, bhk_config, virtual_tour_url, auction_at';
+  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, sold_at, sold_price, sold_price_is_confidential, lat, lng, agent_id, agency_id, created_at, bhk_config, virtual_tour_url, auction_at';
 
 @Injectable()
 export class PropertiesService {
@@ -24,9 +25,13 @@ export class PropertiesService {
 
     let query = this.supabase.client
       .from('properties')
-      .select(PROPERTY_SUMMARY_COLS, { count: 'exact' })
-      .eq('status', 'active')
-      .eq('listing_type', dto.listingType);
+      .select(PROPERTY_SUMMARY_COLS, { count: 'exact' });
+
+    if (dto.listingType === 'sold') {
+      query = query.eq('status', 'sold');
+    } else {
+      query = query.eq('status', 'active').eq('listing_type', dto.listingType);
+    }
 
     if (dto.query) {
       query = query.textSearch('search_vector', dto.query, { type: 'plain', config: 'english' });
@@ -41,11 +46,17 @@ export class PropertiesService {
       if (types.length) query = query.in('property_type', types);
     }
     if (dto.publishedSince) query = query.gte('published_at', dto.publishedSince);
+    if (dto.soldAfter) query = query.gte('sold_at', dto.soldAfter);
+    if (dto.saleMethod) query = query.eq('sale_method', dto.saleMethod);
 
     if (dto.sortBy === 'price_asc') {
       query = query.order('price', { ascending: true, nullsFirst: false });
     } else if (dto.sortBy === 'price_desc') {
       query = query.order('price', { ascending: false, nullsFirst: false });
+    } else if (dto.sortBy === 'days_asc') {
+      query = query.order('published_at', { ascending: true, nullsFirst: false });
+    } else if (dto.listingType === 'sold') {
+      query = query.order('sold_at', { ascending: false, nullsFirst: false });
     } else {
       query = query.order('published_at', { ascending: false, nullsFirst: false });
     }
@@ -85,7 +96,8 @@ export class PropertiesService {
       .single();
 
     if (error || !property) throw new NotFoundException('Property not found');
-    if ((property as { status: string }).status !== 'active') throw new NotFoundException('Property not found');
+    const status = (property as { status: string }).status;
+    if (status !== 'active' && status !== 'sold') throw new NotFoundException('Property not found');
 
     const [images, inspections, agent, agency] = await Promise.all([
       this.supabase.client
@@ -158,9 +170,17 @@ export class PropertiesService {
 
     const enriched = await this.attachImages((data ?? []) as { id: string }[]);
 
-    // Restore the caller-supplied order
     const byId = new Map(enriched.map((p) => [(p as { id: string }).id, p]));
     return ids.map((id) => byId.get(id)).filter(Boolean);
+  }
+
+  async getPriceHistory(propertyId: string) {
+    const { data } = await this.supabase.client
+      .from('property_price_history')
+      .select('id, sold_price, sold_date, sale_method, source')
+      .eq('property_id', propertyId)
+      .order('sold_date', { ascending: true });
+    return data ?? [];
   }
 
   async incrementViewCount(id: string) {
@@ -168,23 +188,58 @@ export class PropertiesService {
     return { success: true };
   }
 
-  async updateStatus(id: string, status: string) {
+  async updateStatus(id: string, dto: UpdateStatusDto) {
+    const { status, soldPrice, soldAt } = dto;
+
     const { data: existing } = await this.supabase.client
       .from('properties')
-      .select('status')
+      .select('status, suburb, state, street_number, street_name, sale_method')
       .eq('id', id)
       .single();
 
+    const patch: Record<string, unknown> = {
+      status,
+      ...(status === 'active' ? { published_at: new Date().toISOString() } : {}),
+      ...(status === 'sold' && soldPrice ? { sold_price: soldPrice } : {}),
+      ...(status === 'sold' && soldAt ? { sold_at: soldAt } : {}),
+    };
+
     const { error } = await this.supabase.client
       .from('properties')
-      .update({ status, ...(status === 'active' ? { published_at: new Date().toISOString() } : {}) })
+      .update(patch)
       .eq('id', id);
 
     if (error) throw error;
 
-    const wasInactive = (existing as { status: string } | null)?.status !== 'active';
+    const typed = existing as {
+      status: string;
+      suburb: string;
+      state: string;
+      street_number: string;
+      street_name: string;
+      sale_method: string | null;
+    } | null;
+
+    const wasInactive = typed?.status !== 'active';
     if (status === 'active' && wasInactive) {
       await this.alertsService.addNewListingJob(id);
+    }
+
+    if (status === 'sold' && soldPrice && typed) {
+      const addressKey = [typed.suburb, typed.state, typed.street_number, typed.street_name]
+        .join('_')
+        .toLowerCase()
+        .replace(/\s+/g, '_');
+
+      await this.supabase.client.from('property_price_history').insert({
+        property_id: id,
+        address_key: addressKey,
+        sold_price: soldPrice,
+        sold_date: soldAt ?? new Date().toISOString().split('T')[0],
+        sale_method: typed.sale_method,
+        source: 'internal',
+        is_seed_data: false,
+      });
     }
 
     return { success: true };
@@ -216,7 +271,7 @@ export class PropertiesService {
   private async fetchAgent(agentId: string) {
     const { data: agent } = await this.supabase.client
       .from('agents')
-      .select('id, profile_id, agency_id, license_no, bio, years_active, created_at')
+      .select('id, slug, profile_id, agency_id, license_no, bio, years_active, created_at')
       .eq('id', agentId)
       .single();
 

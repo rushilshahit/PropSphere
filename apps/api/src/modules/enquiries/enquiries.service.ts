@@ -24,31 +24,34 @@ export class EnquiriesService {
       senderId = user?.id ?? null;
     }
 
-    // Fetch property for address and existence check
-    const { data: property } = await this.supabase.client
-      .from('properties')
-      .select('unit_number, street_number, street_name, suburb, state')
-      .eq('id', dto.property_id)
-      .single();
+    // Fetch property for address (optional — agent-level enquiries have no property)
+    let address = 'General enquiry';
+    if (dto.property_id) {
+      const { data: property } = await this.supabase.client
+        .from('properties')
+        .select('unit_number, street_number, street_name, suburb, state')
+        .eq('id', dto.property_id)
+        .single();
 
-    if (!property) throw new NotFoundException('Property not found');
+      if (!property) throw new NotFoundException('Property not found');
 
-    const p = property as {
-      unit_number: string | null;
-      street_number: string;
-      street_name: string;
-      suburb: string;
-      state: string;
-    };
+      const p = property as {
+        unit_number: string | null;
+        street_number: string;
+        street_name: string;
+        suburb: string;
+        state: string;
+      };
 
-    const address = [
-      p.unit_number ? `${p.unit_number}/${p.street_number}` : p.street_number,
-      p.street_name,
-      p.suburb,
-      p.state,
-    ]
-      .filter(Boolean)
-      .join(' ');
+      address = [
+        p.unit_number ? `${p.unit_number}/${p.street_number}` : p.street_number,
+        p.street_name,
+        p.suburb,
+        p.state,
+      ]
+        .filter(Boolean)
+        .join(' ');
+    }
 
     // Fetch agent profile email
     const { agentEmail, agentName } = await this.fetchAgentContact(dto.agent_id);
@@ -71,15 +74,19 @@ export class EnquiriesService {
 
     if (error) throw error;
 
-    // Increment enquiry_count — fire and forget
-    void Promise.resolve(
-      this.supabase.client.rpc('increment_enquiry_count', { prop_id: dto.property_id }),
-    );
+    // Increment enquiry_count — fire and forget (only when linked to a property)
+    if (dto.property_id) {
+      void Promise.resolve(
+        this.supabase.client.rpc('increment_enquiry_count', { prop_id: dto.property_id }),
+      );
+    }
 
     // Send email — non-blocking
-    if (agentEmail) {
+    const testRecipient = this.config.get<string>('resend.testRecipient');
+    const toEmail = testRecipient || agentEmail;
+    if (toEmail) {
       this.sendEnquiryEmail({
-        agentEmail,
+        agentEmail: toEmail,
         agentName,
         senderName: dto.sender_name,
         senderEmail: dto.sender_email,
@@ -87,7 +94,7 @@ export class EnquiriesService {
         message: dto.message,
         address,
       }).catch((err: unknown) => {
-        console.error('[EnquiriesService] Failed to send enquiry email:', err);
+        console.error('[EnquiriesService] Failed to send enquiry email:', JSON.stringify(err));
       });
     }
 

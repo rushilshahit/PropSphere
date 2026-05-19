@@ -10,8 +10,10 @@ export const searchPropertiesSchema = z.object({
   carSpaces: z.coerce.number().optional(),
   propertyTypes: z.string().optional(), // comma-separated
   features: z.string().optional(),      // comma-separated
-  sortBy: z.enum(['newest', 'price_asc', 'price_desc']).default('newest'),
+  sortBy: z.enum(['newest', 'price_asc', 'price_desc', 'days_asc']).default('newest'),
   publishedSince: z.string().optional(),
+  soldAfter: z.string().optional(),
+  saleMethod: z.enum(['private_treaty', 'auction', 'tender']).optional(),
   page: z.coerce.number().min(1).default(1),
   perPage: z.coerce.number().min(1).max(50).default(24),
 });

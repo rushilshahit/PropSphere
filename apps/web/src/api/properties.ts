@@ -1,7 +1,20 @@
 import { useEffect } from 'react';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
-import type { PropertyDetail, PropertyMapPin, PropertySummary, SearchFilters, SearchResult } from '@propsphere/types';
+import type { PriceHistoryRecord, PropertyDetail, PropertyMapPin, PropertySummary, SearchFilters, SearchResult } from '@propsphere/types';
 import { supabase } from '@/lib/supabase';
+
+export interface SoldSearchFilters {
+  query?: string;
+  priceMin?: number;
+  priceMax?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  propertyTypes?: string[];
+  saleMethod?: string;
+  soldAfter?: string;
+  sortBy: 'newest' | 'price_asc' | 'price_desc' | 'days_asc';
+  page: number;
+}
 
 async function fetchProperties(
   filters: SearchFilters,
@@ -101,6 +114,22 @@ export function useBatchProperties(ids: string[]) {
   });
 }
 
+async function fetchPriceHistory(id: string): Promise<PriceHistoryRecord[]> {
+  const res = await fetch(`/api/properties/${id}/price-history`);
+  if (!res.ok) throw new Error('Failed to fetch price history');
+  const json = await res.json() as { data: PriceHistoryRecord[] };
+  return json.data;
+}
+
+export function usePriceHistory(propertyId: string) {
+  return useQuery({
+    queryKey: ['price-history', propertyId],
+    queryFn: () => fetchPriceHistory(propertyId),
+    staleTime: 24 * 60 * 60_000,
+    enabled: !!propertyId,
+  });
+}
+
 export function useIncrementViewCount(id: string) {
   const { mutate } = useMutation({
     mutationFn: () =>
@@ -110,4 +139,40 @@ export function useIncrementViewCount(id: string) {
   useEffect(() => {
     mutate();
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+async function fetchSoldProperties(
+  filters: SoldSearchFilters,
+  page: number,
+): Promise<SearchResult<PropertySummary>> {
+  const params = new URLSearchParams();
+  params.set('listingType', 'sold');
+  params.set('sortBy', filters.sortBy);
+  params.set('page', String(page));
+  if (filters.query) params.set('query', filters.query);
+  if (filters.priceMin !== undefined) params.set('priceMin', String(filters.priceMin));
+  if (filters.priceMax !== undefined) params.set('priceMax', String(filters.priceMax));
+  if (filters.bedrooms !== undefined) params.set('bedrooms', String(filters.bedrooms));
+  if (filters.bathrooms !== undefined) params.set('bathrooms', String(filters.bathrooms));
+  if (filters.propertyTypes?.length) params.set('propertyTypes', filters.propertyTypes.join(','));
+  if (filters.saleMethod) params.set('saleMethod', filters.saleMethod);
+  if (filters.soldAfter) params.set('soldAfter', filters.soldAfter);
+
+  const res = await fetch(`/api/properties/search?${params.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch sold properties');
+  const json = await res.json() as { data: SearchResult<PropertySummary> };
+  return json.data;
+}
+
+export function useSoldSearch(filters: SoldSearchFilters) {
+  const { page: _page, ...filterKey } = filters;
+
+  return useInfiniteQuery({
+    queryKey: ['properties', 'sold', filterKey],
+    queryFn: ({ pageParam }) => fetchSoldProperties(filters, pageParam as number),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+    staleTime: 30_000,
+  });
 }

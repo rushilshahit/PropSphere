@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -56,8 +56,10 @@ function GoogleIcon() {
 
 export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const [mode, setMode] = useState(initialMode);
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? '/';
   const [apiError, setApiError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
@@ -97,7 +99,7 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
       dispatch(setSession(data.session));
     }
     onClose();
-    navigate('/');
+    navigate(returnTo);
   }
 
   async function handleRegister(values: RegisterForm) {
@@ -126,7 +128,7 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
       dispatch(setSession(data.session));
     }
     onClose();
-    navigate('/');
+    navigate(returnTo);
   }
 
   async function handleGoogleOAuth() {

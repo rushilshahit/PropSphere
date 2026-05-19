@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { DEFAULT_VIEWPORT } from '@/lib/mapbox';
+import { DEFAULT_VIEWPORT } from '@/lib/map';
 import type { RootState } from '@/store';
 
 interface MapState {

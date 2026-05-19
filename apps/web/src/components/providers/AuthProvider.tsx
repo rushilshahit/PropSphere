@@ -17,7 +17,7 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
   return (data as Profile | null) ?? null;
 }
 

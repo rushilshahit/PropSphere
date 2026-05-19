@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { ChevronDown, LayoutDashboard, LogOut, BookmarkCheck, Search } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
@@ -10,12 +10,20 @@ import { NotificationCentre } from '@/features/alerts/components/NotificationCen
 export function Header() {
   const { user, session, isAuthenticated, signOut } = useAuth();
   const isAgent = useAppSelector(selectIsAgent);
+  const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: 'login' | 'register' }>({
     open: false,
     mode: 'login',
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const state = location.state as { requireAuth?: boolean } | null;
+    if (state?.requireAuth && !isAuthenticated) {
+      setAuthModal({ open: true, mode: 'login' });
+    }
+  }, [location.state, isAuthenticated]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

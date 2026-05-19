@@ -4,8 +4,11 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  worker: {
+    format: 'es',
+  },
   optimizeDeps: {
-    exclude: ['maplibre-gl'],
+    include: ['maplibre-gl'],
   },
   resolve: {
     alias: {

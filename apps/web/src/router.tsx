@@ -42,6 +42,8 @@ const AgentPage = lazy(() => import('./features/agent/pages/AgentPage'));
 
 const AgencyPage = lazy(() => import('./features/agency/pages/AgencyPage'));
 
+const SoldSearchPage = lazy(() => import('./features/sold/pages/SoldSearchPage'));
+
 const SuburbPage = lazy(() => import('./features/suburb/pages/SuburbPage'));
 
 const DashboardLayout = lazy(() =>
@@ -52,6 +54,8 @@ const ListingManagement = lazy(() => import('./features/dashboard/pages/ListingM
 const EnquiriesInbox = lazy(() => import('./features/dashboard/pages/EnquiriesInbox'));
 const OfferInbox = lazy(() => import('./features/dashboard/pages/OfferInbox'));
 const AnalyticsPage = lazy(() => import('./features/dashboard/pages/AnalyticsPage'));
+
+const BecomeAnAgentPage = lazy(() => import('./features/agent-signup/pages/BecomeAnAgentPage'));
 
 function StubPage({ label }: { label: string }) {
   return (
@@ -96,7 +100,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'sold',
-        element: <Page><SearchResultsPage /></Page>,
+        element: <Page><SoldSearchPage /></Page>,
       },
       {
         path: ':listingType/:id',
@@ -141,6 +145,16 @@ export const router = createBrowserRouter([
       {
         path: 'agency/:slug',
         element: <Page><AgencyPage /></Page>,
+      },
+      {
+        path: 'become-an-agent',
+        element: (
+          <ProtectedRoute roles={['admin']}>
+            <Suspense fallback={<Loading />}>
+              <BecomeAnAgentPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'finance',

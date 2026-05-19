@@ -25,7 +25,7 @@ interface EnquiryModalProps {
   onClose: () => void;
 }
 
-export function EnquiryModal({ propertyId = '', agentId, agentName, isOpen, onClose }: EnquiryModalProps) {
+export function EnquiryModal({ propertyId, agentId, agentName, isOpen, onClose }: EnquiryModalProps) {
   const { toast } = useToast();
   const { user, session } = useAuth();
   const { mutate, isPending, error } = useCreateEnquiry();
@@ -66,7 +66,7 @@ export function EnquiryModal({ propertyId = '', agentId, agentName, isOpen, onCl
 
   const onSubmit = (data: FormValues) => {
     mutate(
-      { ...data, property_id: propertyId, agent_id: agentId },
+      { ...data, ...(propertyId ? { property_id: propertyId } : {}), agent_id: agentId },
       {
         onSuccess: () => {
           toast(agentName ? `Email sent to ${agentName}` : 'Enquiry sent!', 'success');

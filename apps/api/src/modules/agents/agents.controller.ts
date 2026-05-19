@@ -1,9 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AgentsService } from './agents.service';
+import { agentApplicationSchema, type AgentApplicationDto } from './dto/agent-application.dto';
 
 interface AuthUser {
   id: string;
@@ -58,6 +60,15 @@ export class AgentsController {
   async getMyAnalytics(@CurrentUser() user: AuthUser) {
     const agent = await this.agentsService.findByProfileId(user.id);
     return this.agentsService.getMyAnalytics(agent.id);
+  }
+
+  @Post('apply')
+  @UseGuards(AuthGuard)
+  applyAsAgent(
+    @Body(new ZodValidationPipe(agentApplicationSchema)) dto: AgentApplicationDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.agentsService.apply(dto, user.id);
   }
 
   @Get()

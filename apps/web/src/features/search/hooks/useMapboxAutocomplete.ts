@@ -21,7 +21,7 @@ export function useMapboxAutocomplete(query: string, enabled = true) {
         `https://api.maptiler.com/geocoding/` +
         `${encodeURIComponent(query)}.json` +
         `?key=${MAPTILER_KEY}` +
-        `&autocomplete=1` +
+        `&autocomplete=true` +
         `&types=place,locality,neighbourhood,address` +
         `&country=in` +
         `&limit=6`;
