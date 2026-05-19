@@ -131,6 +131,11 @@ export class AdminController {
     return this.adminService.createAgent(body, req.adminUser);
   }
 
+  @Patch('agents/:id/approve')
+  approveAgent(@Req() req: AdminRequest, @Param('id') id: string) {
+    return this.adminService.approveAgent(id, req.adminUser);
+  }
+
   @Patch('agents/:id')
   updateAgent(
     @Req() req: AdminRequest,

@@ -53,6 +53,8 @@ const EnquiriesInbox = lazy(() => import('./features/dashboard/pages/EnquiriesIn
 const OfferInbox = lazy(() => import('./features/dashboard/pages/OfferInbox'));
 const AnalyticsPage = lazy(() => import('./features/dashboard/pages/AnalyticsPage'));
 
+const BecomeAnAgentPage = lazy(() => import('./features/agent-signup/pages/BecomeAnAgentPage'));
+
 function StubPage({ label }: { label: string }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 text-center text-neutral-400">
@@ -141,6 +143,16 @@ export const router = createBrowserRouter([
       {
         path: 'agency/:slug',
         element: <Page><AgencyPage /></Page>,
+      },
+      {
+        path: 'become-an-agent',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<Loading />}>
+              <BecomeAnAgentPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'finance',

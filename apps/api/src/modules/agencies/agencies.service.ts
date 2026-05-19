@@ -7,6 +7,14 @@ const SOLD_PROPERTY_COLS =
 const ACTIVE_PROPERTY_COLS =
   'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, lat, lng, agent_id, agency_id, created_at, bhk_config, virtual_tour_url, auction_at';
 
+export interface AgencySummary {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  suburb: string;
+  state: string;
+}
+
 async function attachPropertyImages(
   supabase: SupabaseService,
   properties: { id: string }[],
@@ -32,6 +40,17 @@ async function attachPropertyImages(
 @Injectable()
 export class AgenciesService {
   constructor(private readonly supabase: SupabaseService) {}
+
+  async search(q: string): Promise<AgencySummary[]> {
+    const { data, error } = await this.supabase.client
+      .from('agencies')
+      .select('id, name, logo_url, suburb, state')
+      .ilike('name', `%${q}%`)
+      .limit(8);
+
+    if (error) throw error;
+    return (data ?? []) as AgencySummary[];
+  }
 
   async findBySlug(slug: string) {
     const { data: agency, error } = await this.supabase.client
@@ -90,7 +109,6 @@ export class AgenciesService {
       profile: { full_name: string | null; avatar_url: string | null } | null;
     }[];
 
-    // Batch-fetch active listing counts per agent
     const agentIds = rawAgents.map((a) => a.id);
     const listingCountsMap = new Map<string, number>();
     if (agentIds.length) {

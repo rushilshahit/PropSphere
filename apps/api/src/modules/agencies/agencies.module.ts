@@ -6,5 +6,6 @@ import { AgenciesService } from './agencies.service';
 @Module({
   controllers: [AgenciesController],
   providers: [AgenciesService, SupabaseService],
+  exports: [AgenciesService],
 })
 export class AgenciesModule {}

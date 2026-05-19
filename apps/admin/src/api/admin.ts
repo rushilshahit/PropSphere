@@ -162,6 +162,7 @@ export interface AdminAgent {
   years_active: number | null;
   active_listings: number;
   is_active: boolean;
+  profile_role: string;
 }
 
 export const getAgent = (id: string) =>
@@ -180,6 +181,9 @@ export const updateAgent = (id: string, data: Record<string, unknown>) =>
 
 export const deactivateAgent = (id: string) =>
   request<{ success: boolean }>('PATCH', `/agents/${id}`, { is_active: false });
+
+export const approveAgent = (id: string) =>
+  request<{ success: boolean }>('PATCH', `/agents/${id}/approve`);
 
 // ── Users ─────────────────────────────────────────────────────────────────
 export interface AdminUser {
