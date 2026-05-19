@@ -3,6 +3,7 @@ import { SupabaseService } from '../../database/supabase.service';
 import { AlertsService } from '../alerts/alerts.service';
 import type { SearchPropertiesDto } from './dto/search-properties.dto';
 import type { BoundingBoxDto } from './dto/bounding-box.dto';
+import type { UpdateStatusDto } from './dto/update-status.dto';
 
 const PAGE_SIZE = 24;
 
@@ -163,9 +164,17 @@ export class PropertiesService {
 
     const enriched = await this.attachImages((data ?? []) as { id: string }[]);
 
-    // Restore the caller-supplied order
     const byId = new Map(enriched.map((p) => [(p as { id: string }).id, p]));
     return ids.map((id) => byId.get(id)).filter(Boolean);
+  }
+
+  async getPriceHistory(propertyId: string) {
+    const { data } = await this.supabase.client
+      .from('property_price_history')
+      .select('id, sold_price, sold_date, sale_method, source')
+      .eq('property_id', propertyId)
+      .order('sold_date', { ascending: true });
+    return data ?? [];
   }
 
   async incrementViewCount(id: string) {
@@ -173,23 +182,58 @@ export class PropertiesService {
     return { success: true };
   }
 
-  async updateStatus(id: string, status: string) {
+  async updateStatus(id: string, dto: UpdateStatusDto) {
+    const { status, soldPrice, soldAt } = dto;
+
     const { data: existing } = await this.supabase.client
       .from('properties')
-      .select('status')
+      .select('status, suburb, state, street_number, street_name, sale_method')
       .eq('id', id)
       .single();
 
+    const patch: Record<string, unknown> = {
+      status,
+      ...(status === 'active' ? { published_at: new Date().toISOString() } : {}),
+      ...(status === 'sold' && soldPrice ? { sold_price: soldPrice } : {}),
+      ...(status === 'sold' && soldAt ? { sold_at: soldAt } : {}),
+    };
+
     const { error } = await this.supabase.client
       .from('properties')
-      .update({ status, ...(status === 'active' ? { published_at: new Date().toISOString() } : {}) })
+      .update(patch)
       .eq('id', id);
 
     if (error) throw error;
 
-    const wasInactive = (existing as { status: string } | null)?.status !== 'active';
+    const typed = existing as {
+      status: string;
+      suburb: string;
+      state: string;
+      street_number: string;
+      street_name: string;
+      sale_method: string | null;
+    } | null;
+
+    const wasInactive = typed?.status !== 'active';
     if (status === 'active' && wasInactive) {
       await this.alertsService.addNewListingJob(id);
+    }
+
+    if (status === 'sold' && soldPrice && typed) {
+      const addressKey = [typed.suburb, typed.state, typed.street_number, typed.street_name]
+        .join('_')
+        .toLowerCase()
+        .replace(/\s+/g, '_');
+
+      await this.supabase.client.from('property_price_history').insert({
+        property_id: id,
+        address_key: addressKey,
+        sold_price: soldPrice,
+        sold_date: soldAt ?? new Date().toISOString().split('T')[0],
+        sale_method: typed.sale_method,
+        source: 'internal',
+        is_seed_data: false,
+      });
     }
 
     return { success: true };
