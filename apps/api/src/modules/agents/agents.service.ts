@@ -117,6 +117,26 @@ export interface AgentOfferItem {
   property: { id: string; headline: string | null; suburb: string; state: string } | null;
 }
 
+export interface AnalyticsListing {
+  id: string;
+  headline: string | null;
+  suburb: string;
+  view_count: number;
+  enquiry_count: number;
+  enquiryRate: number;
+  daysLive: number;
+  status: string;
+  published_at: string | null;
+}
+
+export interface AgentAnalytics {
+  totalViews: number;
+  totalEnquiries: number;
+  totalOffers: number;
+  avgEnquiryRate: number;
+  listings: AnalyticsListing[];
+}
+
 @Injectable()
 export class AgentsService {
   constructor(private readonly supabase: SupabaseService) {}
@@ -358,6 +378,57 @@ export class AgentsService {
       soldLast12m: soldCount ?? 0,
       avgDaysOnMarket: daysDiffs.length ? Math.round(daysDiffs.reduce((a, b) => a + b, 0) / daysDiffs.length) : null,
       medianSoldPrice: median(soldPrices),
+    };
+  }
+
+  async getMyAnalytics(agentId: string): Promise<AgentAnalytics> {
+    const [{ data: listings }, { count: totalOffers }] = await Promise.all([
+      this.supabase.client
+        .from('properties')
+        .select('id, headline, suburb, view_count, enquiry_count, published_at, status')
+        .eq('agent_id', agentId)
+        .in('status', ['active', 'sold', 'under_contract']),
+      this.supabase.client
+        .from('offers')
+        .select('id', { count: 'exact', head: true })
+        .eq('agent_id', agentId),
+    ]);
+
+    const rows = (listings ?? []) as {
+      id: string;
+      headline: string | null;
+      suburb: string;
+      view_count: number | null;
+      enquiry_count: number | null;
+      published_at: string | null;
+      status: string;
+    }[];
+
+    const totalViews = rows.reduce((s, l) => s + (l.view_count ?? 0), 0);
+    const totalEnquiries = rows.reduce((s, l) => s + (l.enquiry_count ?? 0), 0);
+
+    return {
+      totalViews,
+      totalEnquiries,
+      totalOffers: totalOffers ?? 0,
+      avgEnquiryRate:
+        totalViews > 0 ? Number(((totalEnquiries / totalViews) * 100).toFixed(1)) : 0,
+      listings: rows.map((l) => ({
+        id: l.id,
+        headline: l.headline,
+        suburb: l.suburb,
+        status: l.status,
+        published_at: l.published_at,
+        view_count: l.view_count ?? 0,
+        enquiry_count: l.enquiry_count ?? 0,
+        enquiryRate:
+          (l.view_count ?? 0) > 0
+            ? Number((((l.enquiry_count ?? 0) / (l.view_count ?? 1)) * 100).toFixed(1))
+            : 0,
+        daysLive: l.published_at
+          ? Math.floor((Date.now() - new Date(l.published_at).getTime()) / 86_400_000)
+          : 0,
+      })),
     };
   }
 

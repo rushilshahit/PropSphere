@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, List, MessageSquare, FileText } from 'lucide-react';
+import { LayoutDashboard, List, MessageSquare, FileText, BarChart2 } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/dashboard/listings', label: 'Listings', icon: List, end: false },
   { to: '/dashboard/enquiries', label: 'Enquiries', icon: MessageSquare, end: false },
   { to: '/dashboard/offers', label: 'Offers', icon: FileText, end: false },
+  { to: '/dashboard/analytics', label: 'Analytics', icon: BarChart2, end: false },
 ];
 
 export function DashboardLayout() {
