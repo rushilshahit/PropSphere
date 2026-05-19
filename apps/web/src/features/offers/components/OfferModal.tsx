@@ -12,7 +12,7 @@ import { useToast } from '@/components/providers/ToastProvider';
 const offerSchema = z.object({
   amount:         z.coerce.number().min(1, 'Enter an offer amount'),
   message:        z.string().max(500).optional(),
-  isConfidential: z.boolean(),
+  isConfidential: z.boolean().optional(),
   senderName:     z.string().min(2, 'Name required'),
   senderEmail:    z.string().email('Valid email required'),
   senderPhone:    z.string().optional(),
@@ -72,7 +72,7 @@ export function OfferModal({ propertyId, agentId, askingPrice, isOpen, onClose }
         agentId,
         amount:         data.amount,
         message:        data.message,
-        isConfidential: data.isConfidential,
+        isConfidential: data.isConfidential ?? false,
         senderName:     data.senderName,
         senderEmail:    data.senderEmail,
         senderPhone:    data.senderPhone,
