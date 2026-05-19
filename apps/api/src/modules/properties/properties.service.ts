@@ -8,7 +8,7 @@ import type { UpdateStatusDto } from './dto/update-status.dto';
 const PAGE_SIZE = 24;
 
 const PROPERTY_SUMMARY_COLS =
-  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, lat, lng, agent_id, agency_id, created_at, bhk_config, virtual_tour_url, auction_at';
+  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, sold_at, sold_price, sold_price_is_confidential, lat, lng, agent_id, agency_id, created_at, bhk_config, virtual_tour_url, auction_at';
 
 @Injectable()
 export class PropertiesService {
@@ -46,11 +46,17 @@ export class PropertiesService {
       if (types.length) query = query.in('property_type', types);
     }
     if (dto.publishedSince) query = query.gte('published_at', dto.publishedSince);
+    if (dto.soldAfter) query = query.gte('sold_at', dto.soldAfter);
+    if (dto.saleMethod) query = query.eq('sale_method', dto.saleMethod);
 
     if (dto.sortBy === 'price_asc') {
       query = query.order('price', { ascending: true, nullsFirst: false });
     } else if (dto.sortBy === 'price_desc') {
       query = query.order('price', { ascending: false, nullsFirst: false });
+    } else if (dto.sortBy === 'days_asc') {
+      query = query.order('published_at', { ascending: true, nullsFirst: false });
+    } else if (dto.listingType === 'sold') {
+      query = query.order('sold_at', { ascending: false, nullsFirst: false });
     } else {
       query = query.order('published_at', { ascending: false, nullsFirst: false });
     }
