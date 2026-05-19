@@ -225,7 +225,7 @@ export default function ListingPage() {
               {isSold ? (
                 <>
                   <SoldPricePanel property={property} />
-                  <Link to={`/agent/${property.agent_id}`} className="block">
+                  <Link to={`/agent/${property.agent?.slug ?? property.agent_id}`} className="block">
                     <Button variant="secondary" size="lg" className="w-full">
                       View agent profile
                     </Button>

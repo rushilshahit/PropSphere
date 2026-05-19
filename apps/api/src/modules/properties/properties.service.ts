@@ -271,7 +271,7 @@ export class PropertiesService {
   private async fetchAgent(agentId: string) {
     const { data: agent } = await this.supabase.client
       .from('agents')
-      .select('id, profile_id, agency_id, license_no, bio, years_active, created_at')
+      .select('id, slug, profile_id, agency_id, license_no, bio, years_active, created_at')
       .eq('id', agentId)
       .single();
 
