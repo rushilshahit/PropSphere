@@ -147,7 +147,7 @@ export const router = createBrowserRouter([
       {
         path: 'become-an-agent',
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute roles={['admin']}>
             <Suspense fallback={<Loading />}>
               <BecomeAnAgentPage />
             </Suspense>

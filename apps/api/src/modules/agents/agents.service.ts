@@ -338,9 +338,12 @@ export class AgentsService {
     });
     if (agentErr) throw agentErr;
 
-    const profileUpdates: Record<string, unknown> = { role: 'pending_agent', pending_agent_since: new Date() };
-    if (dto.avatarUrl) profileUpdates['avatar_url'] = dto.avatarUrl;
-    await this.supabase.client.from('profiles').update(profileUpdates).eq('id', userId);
+    if (dto.avatarUrl) {
+      await this.supabase.client
+        .from('profiles')
+        .update({ avatar_url: dto.avatarUrl })
+        .eq('id', userId);
+    }
 
     return { status: 'pending', message: 'Application received. We will review within 2 business days.' };
   }
