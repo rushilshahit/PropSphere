@@ -3,7 +3,7 @@ import Map, { type MapRef } from 'react-map-gl/maplibre';
 import { useDispatch, useSelector } from 'react-redux';
 import MaplibreDraw from 'maplibre-gl-draw';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import 'maplibre-gl-draw/dist/maplibre-gl-draw.css';
+import 'maplibre-gl-draw/dist/mapbox-gl-draw.css';
 import { DEFAULT_VIEWPORT, MAP_STYLE_STREETS } from '@/lib/map';
 import { useMapProperties, useProperty } from '@/api/properties';
 import {

@@ -24,9 +24,13 @@ export class PropertiesService {
 
     let query = this.supabase.client
       .from('properties')
-      .select(PROPERTY_SUMMARY_COLS, { count: 'exact' })
-      .eq('status', 'active')
-      .eq('listing_type', dto.listingType);
+      .select(PROPERTY_SUMMARY_COLS, { count: 'exact' });
+
+    if (dto.listingType === 'sold') {
+      query = query.eq('status', 'sold');
+    } else {
+      query = query.eq('status', 'active').eq('listing_type', dto.listingType);
+    }
 
     if (dto.query) {
       query = query.textSearch('search_vector', dto.query, { type: 'plain', config: 'english' });
@@ -85,7 +89,8 @@ export class PropertiesService {
       .single();
 
     if (error || !property) throw new NotFoundException('Property not found');
-    if ((property as { status: string }).status !== 'active') throw new NotFoundException('Property not found');
+    const status = (property as { status: string }).status;
+    if (status !== 'active' && status !== 'sold') throw new NotFoundException('Property not found');
 
     const [images, inspections, agent, agency] = await Promise.all([
       this.supabase.client

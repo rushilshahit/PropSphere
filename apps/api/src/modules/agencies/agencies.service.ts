@@ -85,7 +85,7 @@ export class AgenciesService {
           .gte('sold_at', oneYearAgo),
       ]);
 
-    const rawAgents = (agentsRes.data ?? []) as {
+    const rawAgents = (agentsRes.data ?? []) as unknown as {
       id: string; slug: string | null; is_verified: boolean;
       profile: { full_name: string | null; avatar_url: string | null } | null;
     }[];
