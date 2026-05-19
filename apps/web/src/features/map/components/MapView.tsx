@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import Map, { type MapRef } from 'react-map-gl/maplibre';
+import type { IControl } from 'maplibre-gl';
 import { useDispatch, useSelector } from 'react-redux';
 import MaplibreDraw from 'maplibre-gl-draw';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -75,7 +76,8 @@ export function MapView() {
         displayControlsDefault: false,
         controls: { polygon: true, trash: true },
       });
-      map.addControl(drawRef.current);
+      // maplibre-gl-draw bundles kt-maplibre-gl causing IControl type mismatch
+      map.addControl(drawRef.current as unknown as IControl);
 
       const handleCreate = (e: { features: GeoJSON.Feature<GeoJSON.Polygon>[] }) => {
         const feature = e.features[0];
@@ -91,7 +93,7 @@ export function MapView() {
       return () => {
         map.off('draw.create', handleCreate as (ev: unknown) => void);
         if (drawRef.current) {
-          map.removeControl(drawRef.current);
+          map.removeControl(drawRef.current as unknown as IControl);
           drawRef.current = null;
         }
       };
