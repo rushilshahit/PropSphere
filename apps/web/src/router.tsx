@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const HomePage = lazy(() => import('./features/home/pages/HomePage'));
 
@@ -50,6 +51,7 @@ const DashboardHome = lazy(() => import('./features/dashboard/pages/DashboardHom
 const ListingManagement = lazy(() => import('./features/dashboard/pages/ListingManagement'));
 const EnquiriesInbox = lazy(() => import('./features/dashboard/pages/EnquiriesInbox'));
 const OfferInbox = lazy(() => import('./features/dashboard/pages/OfferInbox'));
+const AnalyticsPage = lazy(() => import('./features/dashboard/pages/AnalyticsPage'));
 
 function StubPage({ label }: { label: string }) {
   return (
@@ -65,6 +67,16 @@ const Loading = () => (
   </div>
 );
 
+function Page({ children }: { children: React.ReactNode }) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<Loading />}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -72,59 +84,33 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: (
-          <Suspense fallback={<Loading />}>
-            <HomePage />
-          </Suspense>
-        ),
+        element: <Page><HomePage /></Page>,
       },
       {
         path: 'buy',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <SearchResultsPage />
-          </Suspense>
-        ),
+        element: <Page><SearchResultsPage /></Page>,
       },
       {
         path: 'rent',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <SearchResultsPage />
-          </Suspense>
-        ),
+        element: <Page><SearchResultsPage /></Page>,
       },
       {
         path: 'sold',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <SearchResultsPage />
-          </Suspense>
-        ),
+        element: <Page><SearchResultsPage /></Page>,
       },
       {
         path: ':listingType/:id',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ListingPage />
-          </Suspense>
-        ),
+        element: <Page><ListingPage /></Page>,
       },
       {
         path: 'map',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <MapPage />
-          </Suspense>
-        ),
+        element: <Page><MapPage /></Page>,
       },
       {
         path: 'account/saved',
         element: (
           <ProtectedRoute>
-            <Suspense fallback={<Loading />}>
-              <CollectionsPage />
-            </Suspense>
+            <Page><CollectionsPage /></Page>
           </ProtectedRoute>
         ),
       },
@@ -132,67 +118,39 @@ export const router = createBrowserRouter([
         path: 'account/searches',
         element: (
           <ProtectedRoute>
-            <Suspense fallback={<Loading />}>
-              <SavedSearchesPage />
-            </Suspense>
+            <Page><SavedSearchesPage /></Page>
           </ProtectedRoute>
         ),
       },
       {
         path: 'collections/shared/:token',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <StubPage label="Shared Collection" />
-          </Suspense>
-        ),
+        element: <Page><StubPage label="Shared Collection" /></Page>,
       },
       {
         path: 'suburb/:state/:slug',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <SuburbPage />
-          </Suspense>
-        ),
+        element: <Page><SuburbPage /></Page>,
       },
       {
         path: 'agents',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <AgentsPage />
-          </Suspense>
-        ),
+        element: <Page><AgentsPage /></Page>,
       },
       {
         path: 'agent/:slug',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <AgentPage />
-          </Suspense>
-        ),
+        element: <Page><AgentPage /></Page>,
       },
       {
         path: 'agency/:slug',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <AgencyPage />
-          </Suspense>
-        ),
+        element: <Page><AgencyPage /></Page>,
       },
       {
         path: 'finance',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <FinancePage />
-          </Suspense>
-        ),
+        element: <Page><FinancePage /></Page>,
       },
       {
         path: 'account/history',
         element: (
           <ProtectedRoute>
-            <Suspense fallback={<Loading />}>
-              <RecentlyViewedPage />
-            </Suspense>
+            <Page><RecentlyViewedPage /></Page>
           </ProtectedRoute>
         ),
       },
@@ -200,9 +158,7 @@ export const router = createBrowserRouter([
         path: 'account/enquiries',
         element: (
           <ProtectedRoute>
-            <Suspense fallback={<Loading />}>
-              <EnquiryHistoryPage />
-            </Suspense>
+            <Page><EnquiryHistoryPage /></Page>
           </ProtectedRoute>
         ),
       },
@@ -210,9 +166,7 @@ export const router = createBrowserRouter([
         path: 'account/offers',
         element: (
           <ProtectedRoute>
-            <Suspense fallback={<Loading />}>
-              <OfferHistoryPage />
-            </Suspense>
+            <Page><OfferHistoryPage /></Page>
           </ProtectedRoute>
         ),
       },
@@ -221,43 +175,29 @@ export const router = createBrowserRouter([
         path: 'dashboard',
         element: (
           <ProtectedRoute>
-            <Suspense fallback={<Loading />}>
-              <DashboardLayout />
-            </Suspense>
+            <Page><DashboardLayout /></Page>
           </ProtectedRoute>
         ),
         children: [
           {
             index: true,
-            element: (
-              <Suspense fallback={<Loading />}>
-                <DashboardHome />
-              </Suspense>
-            ),
+            element: <Page><DashboardHome /></Page>,
           },
           {
             path: 'listings',
-            element: (
-              <Suspense fallback={<Loading />}>
-                <ListingManagement />
-              </Suspense>
-            ),
+            element: <Page><ListingManagement /></Page>,
           },
           {
             path: 'enquiries',
-            element: (
-              <Suspense fallback={<Loading />}>
-                <EnquiriesInbox />
-              </Suspense>
-            ),
+            element: <Page><EnquiriesInbox /></Page>,
           },
           {
             path: 'offers',
-            element: (
-              <Suspense fallback={<Loading />}>
-                <OfferInbox />
-              </Suspense>
-            ),
+            element: <Page><OfferInbox /></Page>,
+          },
+          {
+            path: 'analytics',
+            element: <Page><AnalyticsPage /></Page>,
           },
         ],
       },

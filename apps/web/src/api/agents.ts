@@ -227,6 +227,39 @@ export function useUpdateOfferStatus() {
   });
 }
 
+export interface AnalyticsListing {
+  id: string;
+  headline: string | null;
+  suburb: string;
+  status: string;
+  published_at: string | null;
+  view_count: number;
+  enquiry_count: number;
+  enquiryRate: number;
+  daysLive: number;
+}
+
+export interface AgentAnalytics {
+  totalViews: number;
+  totalEnquiries: number;
+  totalOffers: number;
+  avgEnquiryRate: number;
+  listings: AnalyticsListing[];
+}
+
+export function useAgentAnalytics() {
+  return useQuery({
+    queryKey: ['agent', 'analytics'],
+    queryFn: async () => {
+      const res = await authFetch('/api/agents/me/analytics');
+      if (!res.ok) throw new Error('Failed to fetch analytics');
+      const json = (await res.json()) as { data: AgentAnalytics };
+      return json.data;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useAgentBySlug(slug: string) {
   return useQuery({
     queryKey: ['agents', slug],
