@@ -52,6 +52,14 @@ export class AgentsController {
     return this.agentsService.getMyOffers(agent.id);
   }
 
+  @Get('me/analytics')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('agent')
+  async getMyAnalytics(@CurrentUser() user: AuthUser) {
+    const agent = await this.agentsService.findByProfileId(user.id);
+    return this.agentsService.getMyAnalytics(agent.id);
+  }
+
   @Get()
   listAgents(
     @Query('page') page?: string,
