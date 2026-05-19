@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChevronDown, LayoutDashboard, LogOut, BookmarkCheck, Search } from 'lucide-react';
+import { ChevronDown, Clock, HandCoins, LayoutDashboard, LogOut, BookmarkCheck, MessageSquare, Search } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
 import { selectIsAgent } from '@/features/auth/store/authSlice';
@@ -101,6 +101,30 @@ export function Header() {
                     >
                       <Search className="w-4 h-4" />
                       Saved Searches
+                    </NavLink>
+                    <NavLink
+                      to="/account/history"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                    >
+                      <Clock className="w-4 h-4" />
+                      Recently Viewed
+                    </NavLink>
+                    <NavLink
+                      to="/account/enquiries"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Enquiries
+                    </NavLink>
+                    <NavLink
+                      to="/account/offers"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                    >
+                      <HandCoins className="w-4 h-4" />
+                      My Offers
                     </NavLink>
                     <button
                       type="button"
