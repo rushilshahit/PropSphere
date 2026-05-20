@@ -65,6 +65,8 @@ const AnalyticsPage = lazy(() => import('./features/dashboard/pages/AnalyticsPag
 
 const BecomeAnAgentPage = lazy(() => import('./features/agent-signup/pages/BecomeAnAgentPage'));
 
+const AcceptInvitationPage = lazy(() => import('./features/owner-listing/pages/AcceptInvitationPage'));
+
 function StubPage({ label }: { label: string }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 text-center text-neutral-400">
@@ -211,6 +213,10 @@ export const router = createBrowserRouter([
             <Page><MyListingDetailPage /></Page>
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'accept-invitation/:token',
+        element: <Page><AcceptInvitationPage /></Page>,
       },
       { path: 'account/*', element: <StubPage label="Account" /> },
       {

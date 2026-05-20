@@ -39,6 +39,35 @@ export interface OwnerListingEnquiry {
   created_at: string;
 }
 
+export interface ListingInvitation {
+  id: string;
+  property_id: string;
+  agent_id: string;
+  agent_name: string | null;
+  agent_email: string;
+  agent_agency: string | null;
+  message: string | null;
+  status: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface InvitationPreview {
+  id: string;
+  message: string | null;
+  status: string;
+  expires_at: string;
+  property: {
+    id: string;
+    headline: string | null;
+    address: string;
+    suburb: string;
+    state: string;
+    listing_type: string;
+  };
+  owner_name: string | null;
+}
+
 async function authFetch(url: string, options?: RequestInit): Promise<Response> {
   const {
     data: { session },
@@ -119,6 +148,88 @@ export function useDeleteOwnerListing() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['owner-listings'] });
+    },
+  });
+}
+
+export function useCreateInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { propertyId: string; agentId: string; message?: string }) => {
+      const res = await authFetch('/api/listing-invitations', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error('Failed to send invitation');
+      const json = (await res.json()) as { data: { id: string } };
+      return json.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['listing-invitations'] });
+    },
+  });
+}
+
+export function useCancelInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await authFetch(`/api/listing-invitations/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to cancel invitation');
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['listing-invitations'] });
+    },
+  });
+}
+
+export function usePendingInvitation(propertyId: string) {
+  return useQuery({
+    queryKey: ['listing-invitations', 'property', propertyId],
+    queryFn: async () => {
+      const res = await authFetch(`/api/listing-invitations/property/${propertyId}`);
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error('Failed to fetch invitation');
+      const json = (await res.json()) as { data: ListingInvitation | null };
+      return json.data;
+    },
+    enabled: !!propertyId,
+    staleTime: 30_000,
+  });
+}
+
+export function useInvitationPreview(token: string) {
+  return useQuery({
+    queryKey: ['listing-invitations', 'preview', token],
+    queryFn: async () => {
+      const res = await fetch(`/api/listing-invitations/preview/${token}`);
+      if (!res.ok) {
+        const json = (await res.json()) as { message?: string };
+        throw new Error(json.message ?? 'Invalid invitation');
+      }
+      const json = (await res.json()) as { data: InvitationPreview };
+      return json.data;
+    },
+    enabled: !!token,
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+export function useAcceptInvitation() {
+  return useMutation({
+    mutationFn: async (token: string) => {
+      const res = await fetch(`/api/listing-invitations/${token}/accept`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to accept invitation');
+    },
+  });
+}
+
+export function useDeclineInvitation() {
+  return useMutation({
+    mutationFn: async (token: string) => {
+      const res = await fetch(`/api/listing-invitations/${token}/decline`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to decline invitation');
     },
   });
 }
