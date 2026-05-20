@@ -45,6 +45,14 @@ export interface SoldProperty {
   published_at: string | null;
 }
 
+export interface AgentSearchResult {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  agency_name: string | null;
+  suburb: string | null;
+}
+
 export interface AgentSummary {
   id: string;
   full_name: string | null;
@@ -271,6 +279,21 @@ export function useAgentBySlug(slug: string) {
     },
     staleTime: 5 * 60_000,
     enabled: !!slug,
+  });
+}
+
+export function useAgentSearch(query: string) {
+  return useQuery({
+    queryKey: ['agents', 'search', query],
+    queryFn: async () => {
+      const params = new URLSearchParams({ q: query });
+      const res = await fetch(`/api/agents/search?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to search agents');
+      const json = (await res.json()) as { data: AgentSearchResult[] };
+      return json.data;
+    },
+    enabled: query.length >= 2,
+    staleTime: 30_000,
   });
 }
 
