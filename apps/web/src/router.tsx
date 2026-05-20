@@ -149,12 +149,16 @@ export const router = createBrowserRouter([
       {
         path: 'become-an-agent',
         element: (
-          <ProtectedRoute roles={['admin']}>
+          <ProtectedRoute roles={['pending_agent', 'agent', 'admin']}>
             <Suspense fallback={<Loading />}>
               <BecomeAnAgentPage />
             </Suspense>
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'post-property',
+        element: <Page><StubPage label="Post a Property" /></Page>,
       },
       {
         path: 'finance',
