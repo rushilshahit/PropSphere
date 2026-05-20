@@ -198,11 +198,13 @@ export default function ListingPage() {
                   />
                 </section>
 
-                <AppraisalCTA
-                  suburb={property.suburb}
-                  agentId={property.agent_id}
-                  propertyId={property.id}
-                />
+                {property.agent_id && (
+                  <AppraisalCTA
+                    suburb={property.suburb}
+                    agentId={property.agent_id}
+                    propertyId={property.id}
+                  />
+                )}
               </>
             )}
 
@@ -264,7 +266,7 @@ export default function ListingPage() {
         </div>
       </div>
 
-      {!isSold && (
+      {!isSold && property.agent_id && (
         <EnquiryModal
           propertyId={property.id}
           agentId={property.agent_id}
@@ -273,7 +275,7 @@ export default function ListingPage() {
           onClose={() => setEnquiryOpen(false)}
         />
       )}
-      {!isSold && property.listing_type === 'buy' && !isMyListing && (
+      {!isSold && property.listing_type === 'buy' && !isMyListing && property.agent_id && (
         <OfferModal
           propertyId={property.id}
           agentId={property.agent_id}
