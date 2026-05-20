@@ -853,12 +853,12 @@ async function seed() {
     ['https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&q=80','https://images.unsplash.com/photo-1600047509358-9dc75507daeb?w=800&q=80','https://images.unsplash.com/photo-1600047508788-786f3865b65c?w=800&q=80'],
     ['https://images.unsplash.com/photo-1574362848149-11496d93a7c7?w=800&q=80','https://images.unsplash.com/photo-1565183997392-2f6f122e5912?w=800&q=80','https://images.unsplash.com/photo-1574362848149-11496d93a7c7?w=800&q=80'],
     ['https://images.unsplash.com/photo-1556020685-ae41abfc9365?w=800&q=80','https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?w=800&q=80','https://images.unsplash.com/photo-1556020685-ae41abfc9365?w=800&q=80'],
-    ['https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&q=80','https://images.unsplash.com/photo-1600573472550-8090733a21e0?w=800&q=80','https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&q=80'],
-    ['https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=800&q=80','https://images.unsplash.com/photo-1558442086-8ea4b6e45d8b?w=800&q=80','https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80'],
+    ['https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&q=80','https://picsum.photos/seed/ps9b/800/600','https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&q=80'],
+    ['https://images.unsplash.com/photo-1464082354059-27db6ce50048?w=800&q=80','https://picsum.photos/seed/ps10b/800/600','https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80'],
     ['https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=800&q=80','https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80','https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80'],
     ['https://images.unsplash.com/photo-1576941089067-2de3c901e126?w=800&q=80','https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80','https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&q=80'],
-    ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80','https://images.unsplash.com/photo-1613977257592-4a9a32f9141b?w=800&q=80','https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=800&q=80'],
-    ['https://images.unsplash.com/photo-1416331108676-a22ccbe8ef03?w=800&q=80','https://images.unsplash.com/photo-1420331329021-4a7e7f7a0380?w=800&q=80','https://images.unsplash.com/photo-1465301055284-72f355b16d85?w=800&q=80'],
+    ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80','https://picsum.photos/seed/ps13b/800/600','https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=800&q=80'],
+    ['https://picsum.photos/seed/ps14a/800/600','https://picsum.photos/seed/ps14b/800/600','https://picsum.photos/seed/ps14c/800/600'],
   ];
 
   const propIds = [];
@@ -910,6 +910,23 @@ async function seed() {
   }
   console.log('Property images added.');
 
+  // ── Floor plan images (every 3rd property) ───────────────────────────────
+  const floorPlanPool = [
+    'https://images.unsplash.com/photo-1604014238040-35e7f8ef75d5?w=1200&q=80',
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
+    'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&q=80',
+  ];
+  let fpCount = 0;
+  for (let i = 0; i < propIds.length; i += 3) {
+    const url = floorPlanPool[fpCount % floorPlanPool.length];
+    await client.query(`
+      INSERT INTO property_images (property_id, storage_path, cdn_url, sort_order, is_floor_plan)
+      VALUES ($1,$2,$3,99,true);
+    `, [propIds[i], `properties/${propIds[i]}/floor_plan.webp`, url]);
+    fpCount++;
+  }
+  console.log(`Floor plan images added for ${fpCount} properties.`);
+
   // ── Inspections (upcoming open homes for active buy listings) ─────────────
   const buyActivePropIds = propIds.filter((_, i) => properties[i].listing_type === 'buy' && properties[i].status === 'active');
   const baseDate = new Date('2026-05-17T10:00:00+05:30');
@@ -930,6 +947,54 @@ async function seed() {
     }
   }
   console.log('Inspections added.');
+
+  // ── Price history (sold properties — 3 records each) ─────────────────────
+  const saleMethodCycle = ['private_treaty', 'auction', 'private_treaty', 'private_treaty', 'auction'];
+  const soldIndices = properties.reduce((acc, p, i) => {
+    if (p.status === 'sold' && p.sold_at && p.sold_price) acc.push(i);
+    return acc;
+  }, []);
+
+  for (const i of soldIndices) {
+    const p     = properties[i];
+    const pid   = propIds[i];
+    const addrKey = [
+      p.suburb.toLowerCase().replace(/ /g, '_'),
+      'gj',
+      String(p.street_number).toLowerCase(),
+      p.street_name.toLowerCase().replace(/ /g, '_'),
+    ].join('_');
+
+    const variance   = (i % 7) / 100;          // 0.00 – 0.06 subtle per-property drift
+    const soldDate   = new Date(p.sold_at);
+    const round50k   = n => Math.round(n / 50000) * 50000;
+
+    // Record 1 — most recent: the actual sale captured on the listing
+    await client.query(`
+      INSERT INTO property_price_history
+        (property_id, address_key, sold_price, sold_date, sale_method, is_seed_data)
+      VALUES ($1,$2,$3,$4,$5::sale_method,true);
+    `, [pid, addrKey, p.sold_price, p.sold_at, p.sale_method || 'private_treaty']);
+
+    // Record 2 — ~3 years prior at 83–89 % of the recent sold price
+    const price2 = round50k(p.sold_price * (0.83 + variance));
+    const date2  = new Date(soldDate.getTime() - (3 * 365 + (i % 60)) * 86400000);
+    await client.query(`
+      INSERT INTO property_price_history
+        (property_id, address_key, sold_price, sold_date, sale_method, is_seed_data)
+      VALUES ($1,$2,$3,$4,$5::sale_method,true);
+    `, [pid, addrKey, price2, date2.toISOString().slice(0, 10), saleMethodCycle[i % 5]]);
+
+    // Record 3 — ~6 years prior at 65–71 % of the recent sold price
+    const price3 = round50k(p.sold_price * (0.65 + variance));
+    const date3  = new Date(soldDate.getTime() - (6 * 365 + (i % 90)) * 86400000);
+    await client.query(`
+      INSERT INTO property_price_history
+        (property_id, address_key, sold_price, sold_date, sale_method, is_seed_data)
+      VALUES ($1,$2,$3,$4,$5::sale_method,true);
+    `, [pid, addrKey, price3, date3.toISOString().slice(0, 10), saleMethodCycle[(i + 1) % 5]]);
+  }
+  console.log(`Price history added for ${soldIndices.length} sold properties (3 records each).`);
 
   // ── Schools (3 per suburb) ────────────────────────────────────────────────
   const schoolTemplates = [

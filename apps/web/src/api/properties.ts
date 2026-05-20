@@ -107,7 +107,8 @@ export function useBatchProperties(ids: string[]) {
         body: JSON.stringify({ ids }),
       });
       if (!res.ok) throw new Error('Failed to fetch properties batch');
-      return res.json() as Promise<PropertySummary[]>;
+      const json = await res.json() as { data: PropertySummary[] };
+      return json.data;
     },
     enabled: ids.length > 0,
     staleTime: 60_000,

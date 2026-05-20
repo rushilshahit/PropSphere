@@ -189,8 +189,8 @@ export function PhotoGallery({ images, virtualTourUrl, lat, lng }: PhotoGalleryP
           {floorPlans.map((fp, i) => (
             <img
               key={fp.id}
-              src={`${fp.cdn_url}?width=1200&format=webp`}
-              alt="Floor plan"
+              src={supabaseTransform(fp.cdn_url, 1200)}
+              alt={fp.caption ?? `Floor plan ${i + 1}`}
               className="w-full rounded-[8px] cursor-zoom-in"
               onClick={() => openLightbox(floorPlans, i)}
               loading="lazy"
