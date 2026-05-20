@@ -4,13 +4,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X } from 'lucide-react';
+import { X, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAppDispatch } from '@/store/hooks';
 import { setSession } from '@/features/auth/store/authSlice';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui';
+import { RegisterRoleSelector, type SelectableRole } from './RegisterRoleSelector';
 
 interface AuthModalProps {
   mode: 'login' | 'register';
@@ -23,13 +24,20 @@ const loginSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
-const registerSchema = loginSchema.extend({
+const registerDetailsSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
-  role: z.enum(['buyer', 'renter', 'seller', 'agent']),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
-type RegisterForm = z.infer<typeof registerSchema>;
+type RegisterDetailsForm = z.infer<typeof registerDetailsSchema>;
+
+const ROLE_REDIRECT: Record<SelectableRole, string> = {
+  seller: '/post-property',
+  agent: '/become-an-agent',
+  buyer: '/',
+};
 
 function GoogleIcon() {
   return (
@@ -58,15 +66,21 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
+  const { toast } = useToast();
+
   const [mode, setMode] = useState(initialMode);
-  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? '/';
+  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  const [selectedRole, setSelectedRole] = useState<SelectableRole>('buyer');
   const [apiError, setApiError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
-  const { toast } = useToast();
+
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? '/';
 
   useEffect(() => {
     setMode(initialMode);
+    setRegisterStep(1);
+    setSelectedRole('buyer');
     setApiError(null);
   }, [initialMode, isOpen]);
 
@@ -78,10 +92,16 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
   }, [isOpen, onClose]);
 
   const loginForm = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
-  const registerForm = useForm<RegisterForm>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { role: 'buyer' },
-  });
+  const registerForm = useForm<RegisterDetailsForm>({ resolver: zodResolver(registerDetailsSchema) });
+
+  function switchMode(next: 'login' | 'register') {
+    setMode(next);
+    setRegisterStep(1);
+    setSelectedRole('buyer');
+    setApiError(null);
+    loginForm.reset();
+    registerForm.reset();
+  }
 
   async function handleLogin(values: LoginForm) {
     setApiError(null);
@@ -91,47 +111,41 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
       password: values.password,
     });
     setLoginLoading(false);
-    if (error) {
-      setApiError(error.message);
-      return;
-    }
-    if (data.session) {
-      dispatch(setSession(data.session));
-    }
+    if (error) { setApiError(error.message); return; }
+    if (data.session) dispatch(setSession(data.session));
     onClose();
     navigate(returnTo);
   }
 
-  async function handleRegister(values: RegisterForm) {
+  async function handleRegister(values: RegisterDetailsForm) {
     setApiError(null);
     setRegisterLoading(true);
+    const dbRole = selectedRole === 'agent' ? 'pending_agent' : selectedRole;
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
-      options: { data: { full_name: values.fullName, role: values.role } },
+      options: { data: { full_name: values.fullName, role: dbRole } },
     });
     setRegisterLoading(false);
-    if (error) {
-      setApiError(error.message);
-      return;
-    }
+    if (error) { setApiError(error.message); return; }
     if (data.user) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
         email: values.email,
         full_name: values.fullName,
-        role: values.role,
+        role: dbRole,
       });
     }
     toast('Welcome to PropSphere!', 'success');
-    if (data.session) {
-      dispatch(setSession(data.session));
-    }
+    if (data.session) dispatch(setSession(data.session));
     onClose();
-    navigate(returnTo);
+    navigate(ROLE_REDIRECT[selectedRole]);
   }
 
   async function handleGoogleOAuth() {
+    if (mode === 'register') {
+      sessionStorage.setItem('oauth_role_pending', '1');
+    }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
@@ -158,112 +172,127 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
         </button>
 
         <div className="p-8">
-          <h2 className="text-xl font-bold text-neutral-900 mb-6">
-            {mode === 'login' ? 'Welcome back' : 'Create your account'}
-          </h2>
 
-          {/* Google OAuth */}
-          <button
-            type="button"
-            onClick={handleGoogleOAuth}
-            className="w-full flex items-center justify-center gap-3 border border-neutral-300 rounded-btn py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors mb-4"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-neutral-200" />
-            <span className="text-xs text-neutral-400">or</span>
-            <div className="flex-1 h-px bg-neutral-200" />
-          </div>
-
-          {/* Login form */}
+          {/* ── Login ────────────────────────────────────────── */}
           {mode === 'login' && (
-            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-              <Input
-                label="Email"
-                type="email"
-                autoComplete="email"
-                error={loginForm.formState.errors.email?.message}
-                {...loginForm.register('email')}
-              />
-              <Input
-                label="Password"
-                type="password"
-                autoComplete="current-password"
-                error={loginForm.formState.errors.password?.message}
-                {...loginForm.register('password')}
-              />
-              {apiError && <p className="text-sm text-red-500">{apiError}</p>}
-              <Button
-                type="submit"
-                className="w-full"
-                loading={loginLoading}
+            <>
+              <h2 className="text-xl font-bold text-neutral-900 mb-6">Welcome back</h2>
+              <button
+                type="button"
+                onClick={handleGoogleOAuth}
+                className="w-full flex items-center justify-center gap-3 border border-neutral-300 rounded-btn py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors mb-4"
               >
-                Log in
-              </Button>
-            </form>
-          )}
-
-          {/* Register form */}
-          {mode === 'register' && (
-            <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-              <Input
-                label="Full name"
-                type="text"
-                autoComplete="name"
-                error={registerForm.formState.errors.fullName?.message}
-                {...registerForm.register('fullName')}
-              />
-              <Input
-                label="Email"
-                type="email"
-                autoComplete="email"
-                error={registerForm.formState.errors.email?.message}
-                {...registerForm.register('email')}
-              />
-              <Input
-                label="Password"
-                type="password"
-                autoComplete="new-password"
-                error={registerForm.formState.errors.password?.message}
-                {...registerForm.register('password')}
-              />
-              <div>
-                <label className="block text-[13px] font-medium text-neutral-700 mb-1.5">
-                  I am a
-                </label>
-                <select
-                  className="w-full border border-neutral-300 rounded-btn px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent bg-white"
-                  {...registerForm.register('role')}
-                >
-                  <option value="buyer">Buyer</option>
-                  <option value="renter">Renter</option>
-                  <option value="seller">Seller</option>
-                  <option value="agent">Agent</option>
-                </select>
+                <GoogleIcon />
+                Continue with Google
+              </button>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-neutral-200" />
+                <span className="text-xs text-neutral-400">or</span>
+                <div className="flex-1 h-px bg-neutral-200" />
               </div>
-              {apiError && <p className="text-sm text-red-500">{apiError}</p>}
-              <Button
-                type="submit"
-                className="w-full"
-                loading={registerLoading}
-              >
-                Sign up
-              </Button>
-            </form>
+              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                <Input
+                  label="Email"
+                  type="email"
+                  autoComplete="email"
+                  error={loginForm.formState.errors.email?.message}
+                  {...loginForm.register('email')}
+                />
+                <Input
+                  label="Password"
+                  type="password"
+                  autoComplete="current-password"
+                  error={loginForm.formState.errors.password?.message}
+                  {...loginForm.register('password')}
+                />
+                {apiError && <p className="text-sm text-red-500">{apiError}</p>}
+                <Button type="submit" className="w-full" loading={loginLoading}>
+                  Log in
+                </Button>
+              </form>
+            </>
           )}
 
-          {/* Toggle */}
+          {/* ── Register step 1: role picker ─────────────────── */}
+          {mode === 'register' && registerStep === 1 && (
+            <>
+              <h2 className="text-xl font-bold text-neutral-900 mb-2">Create your account</h2>
+              <p className="text-sm text-neutral-500 mb-6">I am a…</p>
+              <RegisterRoleSelector value={selectedRole} onChange={setSelectedRole} />
+              <Button
+                className="w-full mt-6"
+                onClick={() => { setApiError(null); setRegisterStep(2); }}
+              >
+                Continue
+              </Button>
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-neutral-200" />
+                <span className="text-xs text-neutral-400">or</span>
+                <div className="flex-1 h-px bg-neutral-200" />
+              </div>
+              <button
+                type="button"
+                onClick={handleGoogleOAuth}
+                className="w-full flex items-center justify-center gap-3 border border-neutral-300 rounded-btn py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+              >
+                <GoogleIcon />
+                Sign up with Google
+              </button>
+            </>
+          )}
+
+          {/* ── Register step 2: details ──────────────────────── */}
+          {mode === 'register' && registerStep === 2 && (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setRegisterStep(1)}
+                  className="text-neutral-400 hover:text-neutral-600"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-xl font-bold text-neutral-900">Your details</h2>
+              </div>
+              <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                <Input
+                  label="Full name"
+                  type="text"
+                  autoComplete="name"
+                  error={registerForm.formState.errors.fullName?.message}
+                  {...registerForm.register('fullName')}
+                />
+                <Input
+                  label="Email"
+                  type="email"
+                  autoComplete="email"
+                  error={registerForm.formState.errors.email?.message}
+                  {...registerForm.register('email')}
+                />
+                <Input
+                  label="Password"
+                  type="password"
+                  autoComplete="new-password"
+                  error={registerForm.formState.errors.password?.message}
+                  {...registerForm.register('password')}
+                />
+                {apiError && <p className="text-sm text-red-500">{apiError}</p>}
+                <Button type="submit" className="w-full" loading={registerLoading}>
+                  Create account
+                </Button>
+              </form>
+            </>
+          )}
+
+          {/* ── Toggle login/register ─────────────────────────── */}
           <p className="text-sm text-neutral-500 text-center mt-5">
             {mode === 'login' ? (
               <>
                 Don&apos;t have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => { setMode('register'); setApiError(null); }}
+                  onClick={() => switchMode('register')}
                   className="text-brand-primary font-medium hover:underline"
                 >
                   Sign up
@@ -274,7 +303,7 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => { setMode('login'); setApiError(null); }}
+                  onClick={() => switchMode('login')}
                   className="text-brand-primary font-medium hover:underline"
                 >
                   Log in
