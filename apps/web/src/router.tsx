@@ -34,6 +34,14 @@ const OfferHistoryPage = lazy(() =>
   import('./features/account/pages/OfferHistoryPage'),
 );
 
+const MyListingsPage = lazy(() =>
+  import('./features/account/pages/MyListingsPage'),
+);
+
+const MyListingDetailPage = lazy(() =>
+  import('./features/account/pages/MyListingDetailPage'),
+);
+
 const FinancePage = lazy(() => import('./features/finance/pages/FinancePage'));
 
 const AgentsPage = lazy(() => import('./features/agent/pages/AgentsPage'));
@@ -185,6 +193,22 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Page><OfferHistoryPage /></Page>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'account/my-listings',
+        element: (
+          <ProtectedRoute roles={['seller', 'agent']}>
+            <Page><MyListingsPage /></Page>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'account/my-listings/:id',
+        element: (
+          <ProtectedRoute roles={['seller', 'agent']}>
+            <Page><MyListingDetailPage /></Page>
           </ProtectedRoute>
         ),
       },

@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { ChevronDown, Clock, HandCoins, LayoutDashboard, LogOut, BookmarkCheck, MessageSquare, Search } from 'lucide-react';
+import { ChevronDown, Clock, HandCoins, LayoutDashboard, List, LogOut, BookmarkCheck, MessageSquare, Search } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
-import { selectIsAgent } from '@/features/auth/store/authSlice';
+import { selectIsAgent, selectIsSeller } from '@/features/auth/store/authSlice';
 import { AuthModal } from '@/features/auth/components/AuthModal';
 import { NotificationCentre } from '@/features/alerts/components/NotificationCentre';
 
 export function Header() {
   const { user, session, isAuthenticated, signOut } = useAuth();
   const isAgent = useAppSelector(selectIsAgent);
+  const isSeller = useAppSelector(selectIsSeller);
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: 'login' | 'register' }>({
@@ -92,6 +93,16 @@ export function Header() {
                       >
                         <LayoutDashboard className="w-4 h-4" />
                         Dashboard
+                      </NavLink>
+                    )}
+                    {isSeller && (
+                      <NavLink
+                        to="/account/my-listings"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                      >
+                        <List className="w-4 h-4" />
+                        My Listings
                       </NavLink>
                     )}
                     <NavLink

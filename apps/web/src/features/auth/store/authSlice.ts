@@ -51,6 +51,7 @@ export const selectAuthInitialized = (state: RootState) => state.auth.initialize
 export const selectUserRole = (state: RootState): UserRole | null =>
   state.auth.user?.role ?? null;
 export const selectIsAgent = (state: RootState) => state.auth.user?.role === 'agent';
+export const selectIsSeller = (state: RootState) => state.auth.user?.role === 'seller';
 export const selectNeedsRoleSelection = (state: RootState) => state.auth.needsRoleSelection;
 
 export const authReducer = authSlice.reducer;
