@@ -82,6 +82,12 @@ export class AgentsController {
     });
   }
 
+  // Must be declared before :slug routes to avoid parameter capture
+  @Get('search')
+  searchAgents(@Query('q') q?: string) {
+    return this.agentsService.searchAgents(q ?? '');
+  }
+
   // Slug-based public routes — declared after me/* and list to avoid conflicts
   @Get(':slug/sold')
   getSoldHistory(@Param('slug') slug: string) {

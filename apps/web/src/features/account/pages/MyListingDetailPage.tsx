@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -7,8 +8,17 @@ import {
   Mail,
   ExternalLink,
   Building2,
+  UserPlus,
+  X,
 } from 'lucide-react';
-import { useMyOwnerListings, useOwnerListingStats, useOwnerListingEnquiries } from '@/api/owner-listings';
+import {
+  useMyOwnerListings,
+  useOwnerListingStats,
+  useOwnerListingEnquiries,
+  usePendingInvitation,
+  useCancelInvitation,
+} from '@/api/owner-listings';
+import { InviteAgentModal } from '@/features/owner-listing/components/InviteAgentModal';
 import { Skeleton, Spinner } from '@/components/ui';
 
 const ENQUIRY_STATUS_COLOR: Record<string, string> = {
@@ -45,10 +55,13 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 export default function MyListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const listingId = id ?? '';
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const { data: listings } = useMyOwnerListings();
   const { data: stats, isLoading: statsLoading } = useOwnerListingStats(listingId);
   const { data: enquiries, isLoading: enquiriesLoading } = useOwnerListingEnquiries(listingId);
+  const { data: pendingInvitation } = usePendingInvitation(listingId);
+  const { mutate: cancelInvitation, isPending: cancelling } = useCancelInvitation();
 
   const listing = listings?.find((l) => l.id === listingId);
 
@@ -67,6 +80,7 @@ export default function MyListingDetailPage() {
     : '';
 
   return (
+    <>
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Back + title */}
       <div>
@@ -85,20 +99,53 @@ export default function MyListingDetailPage() {
               </h1>
               <p className="text-sm text-neutral-500 mt-0.5">{address}</p>
             </div>
-            <Link
-              to={`/${listing.listing_type}/${listing.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 flex items-center gap-1 text-sm text-brand-primary hover:text-brand-primary/80 transition-colors"
-            >
-              View on site
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {listing.status === 'active' && !pendingInvitation && (
+                <button
+                  type="button"
+                  onClick={() => setInviteOpen(true)}
+                  className="flex items-center gap-1 text-sm font-medium text-brand-primary hover:text-brand-primary/80 transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Invite an Agent
+                </button>
+              )}
+              <Link
+                to={`/${listing.listing_type}/${listing.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
+              >
+                View on site
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         ) : (
           <Skeleton className="h-7 w-64 rounded" />
         )}
       </div>
+
+      {/* Pending invitation strip */}
+      {pendingInvitation && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-btn">
+          <p className="text-sm text-amber-800">
+            <span className="font-medium">Invitation pending</span>
+            {pendingInvitation.agent_name && (
+              <span className="text-amber-700"> — sent to {pendingInvitation.agent_name}</span>
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => cancelInvitation(pendingInvitation.id)}
+            disabled={cancelling}
+            className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-40 transition-colors flex-shrink-0"
+          >
+            {cancelling ? <Spinner size="sm" /> : <X className="w-3.5 h-3.5" />}
+            Cancel invitation
+          </button>
+        </div>
+      )}
 
       {/* Stats cards */}
       <div className="grid grid-cols-3 gap-4">
@@ -177,5 +224,13 @@ export default function MyListingDetailPage() {
         )}
       </div>
     </div>
+
+    <InviteAgentModal
+      isOpen={inviteOpen}
+      onClose={() => setInviteOpen(false)}
+      listingId={listingId}
+      listingAddress={address}
+    />
+    </>
   );
 }
