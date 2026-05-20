@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -10,6 +10,10 @@ import {
   updateOwnerListingStatusSchema,
   type UpdateOwnerListingStatusDto,
 } from './dto/update-owner-listing-status.dto';
+import {
+  updateOwnerListingSchema,
+  type UpdateOwnerListingDto,
+} from './dto/update-owner-listing.dto';
 import { OwnerListingsService } from './owner-listings.service';
 
 interface AuthUser {
@@ -39,6 +43,25 @@ export class OwnerListingsController {
     return this.ownerListingsService.getActiveCount(user.id);
   }
 
+  @Get(':id/stats')
+  getStats(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.ownerListingsService.getStats(id, user.id);
+  }
+
+  @Get(':id/enquiries')
+  getEnquiries(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.ownerListingsService.getEnquiries(id, user.id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateOwnerListingSchema)) dto: UpdateOwnerListingDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.ownerListingsService.update(id, dto, user.id);
+  }
+
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
@@ -46,5 +69,10 @@ export class OwnerListingsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.ownerListingsService.updateStatus(id, dto, user.id);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.ownerListingsService.delete(id, user.id);
   }
 }

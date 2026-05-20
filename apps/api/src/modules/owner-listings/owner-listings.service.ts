@@ -7,6 +7,7 @@ import {
 import { SupabaseService } from '../../database/supabase.service';
 import type { CreateOwnerListingDto } from './dto/create-owner-listing.dto';
 import type { UpdateOwnerListingStatusDto } from './dto/update-owner-listing-status.dto';
+import type { UpdateOwnerListingDto } from './dto/update-owner-listing.dto';
 
 const MAX_ACTIVE_LISTINGS = 5;
 
@@ -44,7 +45,7 @@ export class OwnerListingsService {
     const { data, error } = await this.supabase.client
       .from('properties')
       .select(
-        'id, status, headline, suburb, state, price, price_display, price_min, price_max, listing_type, property_type, bedrooms, bathrooms, published_at, created_at',
+        'id, status, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, price_min, price_max, listing_type, property_type, bedrooms, bathrooms, published_at, created_at, view_count, enquiry_count',
       )
       .eq('owner_id', userId)
       .eq('listing_source', 'owner')
@@ -66,6 +67,88 @@ export class OwnerListingsService {
     if (error) throw new BadRequestException(error.message);
 
     return { count: count ?? 0, max: MAX_ACTIVE_LISTINGS };
+  }
+
+  async getStats(id: string, userId: string) {
+    const { data: property, error } = await this.supabase.client
+      .from('properties')
+      .select('owner_id, view_count, enquiry_count, published_at')
+      .eq('id', id)
+      .eq('listing_source', 'owner')
+      .single();
+
+    if (error || !property) throw new NotFoundException('Listing not found');
+    if ((property as { owner_id: string }).owner_id !== userId) {
+      throw new ForbiddenException('Not your listing');
+    }
+
+    const p = property as {
+      view_count: number;
+      enquiry_count: number;
+      published_at: string | null;
+    };
+
+    const daysListed = p.published_at
+      ? Math.ceil(
+          (Date.now() - new Date(p.published_at).getTime()) / (1000 * 60 * 60 * 24),
+        )
+      : 0;
+
+    return {
+      view_count: p.view_count ?? 0,
+      enquiry_count: p.enquiry_count ?? 0,
+      days_listed: daysListed,
+    };
+  }
+
+  async getEnquiries(id: string, userId: string) {
+    const { data: property } = await this.supabase.client
+      .from('properties')
+      .select('owner_id')
+      .eq('id', id)
+      .eq('listing_source', 'owner')
+      .single();
+
+    if (!property) throw new NotFoundException('Listing not found');
+    if ((property as { owner_id: string }).owner_id !== userId) {
+      throw new ForbiddenException('Not your listing');
+    }
+
+    const { data, error } = await this.supabase.client
+      .from('enquiries')
+      .select('id, sender_name, sender_email, sender_phone, message, status, created_at')
+      .eq('property_id', id)
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new BadRequestException(error.message);
+
+    return data ?? [];
+  }
+
+  async update(id: string, dto: UpdateOwnerListingDto, userId: string) {
+    const { data: existing } = await this.supabase.client
+      .from('properties')
+      .select('owner_id')
+      .eq('id', id)
+      .eq('listing_source', 'owner')
+      .single();
+
+    if (!existing) throw new NotFoundException('Listing not found');
+    if ((existing as { owner_id: string }).owner_id !== userId) {
+      throw new ForbiddenException('Not your listing');
+    }
+
+    const { data, error } = await this.supabase.client
+      .from('properties')
+      .update(dto)
+      .eq('id', id)
+      .select('id')
+      .single();
+
+    if (error) throw new BadRequestException(error.message);
+
+    return data;
   }
 
   async updateStatus(id: string, dto: UpdateOwnerListingStatusDto, userId: string) {
@@ -94,6 +177,29 @@ export class OwnerListingsService {
     if (error) throw new BadRequestException(error.message);
 
     return data;
+  }
+
+  async delete(id: string, userId: string) {
+    const { data: existing } = await this.supabase.client
+      .from('properties')
+      .select('owner_id')
+      .eq('id', id)
+      .eq('listing_source', 'owner')
+      .single();
+
+    if (!existing) throw new NotFoundException('Listing not found');
+    if ((existing as { owner_id: string }).owner_id !== userId) {
+      throw new ForbiddenException('Not your listing');
+    }
+
+    const { error } = await this.supabase.client
+      .from('properties')
+      .update({ status: 'withdrawn' })
+      .eq('id', id);
+
+    if (error) throw new BadRequestException(error.message);
+
+    return { success: true };
   }
 
   private async assertSellerRole(userId: string) {
