@@ -16,6 +16,7 @@ import { AuctionCountdown } from '../components/AuctionCountdown';
 import { FeaturesList } from '../components/FeaturesList';
 import { SoldHistory } from '../components/SoldHistory';
 import { AgentCard } from '../components/AgentCard';
+import { OwnerContactCard } from '../components/OwnerContactCard';
 import { EnquiryModal } from '../components/EnquiryModal';
 import { OfferModal } from '@/features/offers/components/OfferModal';
 import { SimilarProperties } from '../components/SimilarProperties';
@@ -104,7 +105,12 @@ export default function ListingPage() {
   const { user, isAuthenticated } = useAuth();
   const { isSaved, toggle, saveModalOpen, closeSaveModal } = useSaveProperty(id!);
   const { data: property, isLoading, isError } = useProperty(id!);
-  const isMyListing = Boolean(user && property?.agent?.profile_id === user.id);
+  const isMyListing = Boolean(
+    user && (
+      property?.agent?.profile_id === user.id ||
+      property?.owner_id === user.id
+    ),
+  );
   useIncrementViewCount(id!);
   useTrackRecentlyViewed(id!);
 
@@ -122,6 +128,7 @@ export default function ListingPage() {
 
   const address = buildAddress(property);
   const isSold = property.status === 'sold';
+  const isOwnerListing = property.listing_source === 'owner';
 
   function handleShare() {
     const shareUrl = window.location.href;
@@ -256,21 +263,30 @@ export default function ListingPage() {
                 />
               )}
 
-              <AgentCard
-                agent={property.agent}
-                agency={property.agency}
-                onEnquire={() => setEnquiryOpen(true)}
-              />
+              {isOwnerListing ? (
+                <OwnerContactCard
+                  ownerName={property.owner_name}
+                  onEnquire={() => setEnquiryOpen(true)}
+                />
+              ) : property.agent && property.agency ? (
+                <AgentCard
+                  agent={property.agent}
+                  agency={property.agency}
+                  onEnquire={() => setEnquiryOpen(true)}
+                />
+              ) : null}
             </div>
           </div>
         </div>
       </div>
 
-      {!isSold && property.agent_id && (
+      {!isSold && (isOwnerListing || property.agent_id) && (
         <EnquiryModal
           propertyId={property.id}
-          agentId={property.agent_id}
+          agentId={property.agent_id ?? undefined}
           agentName={property.agent?.full_name ?? undefined}
+          ownerId={isOwnerListing ? (property.owner_id ?? undefined) : undefined}
+          ownerName={isOwnerListing ? (property.owner_name ?? undefined) : undefined}
           isOpen={enquiryOpen}
           onClose={() => setEnquiryOpen(false)}
         />

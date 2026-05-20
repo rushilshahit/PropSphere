@@ -164,6 +164,11 @@ export function PropertyCard({ property, compact = false, variant = 'active' }: 
               View agent →
             </Link>
           )}
+          {property.listing_source === 'owner' && (
+            <span className="text-xs text-neutral-500 flex items-center gap-1">
+              🔒 Private
+            </span>
+          )}
         </div>
 
         {/* Save button — only for active variant, outside the Link to prevent navigation */}
