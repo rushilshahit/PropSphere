@@ -4,6 +4,23 @@ import { Resend } from 'resend';
 import { SupabaseService } from '../../database/supabase.service';
 import type { CreateEnquiryDto } from './dto/create-enquiry.dto';
 
+interface PropertyRow {
+  unit_number: string | null;
+  street_number: string;
+  street_name: string;
+  suburb: string;
+  state: string;
+  listing_source: string;
+  owner_id: string | null;
+}
+
+interface Contact {
+  email: string;
+  name: string;
+  recipientId: string | null;
+  isOwner: boolean;
+}
+
 @Injectable()
 export class EnquiriesService {
   private readonly resend: Resend;
@@ -16,7 +33,6 @@ export class EnquiriesService {
   }
 
   async create(dto: CreateEnquiryDto, authHeader?: string) {
-    // Resolve sender_id from JWT if the user is authenticated
     let senderId: string | null = null;
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
@@ -24,25 +40,19 @@ export class EnquiriesService {
       senderId = user?.id ?? null;
     }
 
-    // Fetch property for address (optional — agent-level enquiries have no property)
     let address = 'General enquiry';
+    let contact: Contact = { email: '', name: '', recipientId: null, isOwner: false };
+
     if (dto.property_id) {
       const { data: property } = await this.supabase.client
         .from('properties')
-        .select('unit_number, street_number, street_name, suburb, state')
+        .select('unit_number, street_number, street_name, suburb, state, listing_source, owner_id')
         .eq('id', dto.property_id)
         .single();
 
       if (!property) throw new NotFoundException('Property not found');
 
-      const p = property as {
-        unit_number: string | null;
-        street_number: string;
-        street_name: string;
-        suburb: string;
-        state: string;
-      };
-
+      const p = property as PropertyRow;
       address = [
         p.unit_number ? `${p.unit_number}/${p.street_number}` : p.street_number,
         p.street_name,
@@ -51,43 +61,54 @@ export class EnquiriesService {
       ]
         .filter(Boolean)
         .join(' ');
+
+      if (p.listing_source === 'owner' && p.owner_id) {
+        contact = await this.fetchOwnerContact(p.owner_id);
+      } else if (dto.agent_id) {
+        contact = await this.fetchAgentContact(dto.agent_id);
+      }
+    } else if (dto.agent_id) {
+      contact = await this.fetchAgentContact(dto.agent_id);
     }
 
-    // Fetch agent profile email
-    const { agentEmail, agentName } = await this.fetchAgentContact(dto.agent_id);
+    const enquiryInsert: Record<string, unknown> = {
+      property_id: dto.property_id ?? null,
+      sender_id: senderId,
+      sender_name: dto.sender_name,
+      sender_email: dto.sender_email,
+      sender_phone: dto.sender_phone ?? null,
+      message: dto.message,
+      status: 'new',
+    };
 
-    // Insert enquiry row
+    if (contact.isOwner) {
+      enquiryInsert['owner_id'] = contact.recipientId;
+      enquiryInsert['agent_id'] = null;
+    } else {
+      enquiryInsert['agent_id'] = dto.agent_id ?? null;
+      enquiryInsert['owner_id'] = null;
+    }
+
     const { data: enquiry, error } = await this.supabase.client
       .from('enquiries')
-      .insert({
-        property_id: dto.property_id,
-        agent_id: dto.agent_id,
-        sender_id: senderId,
-        sender_name: dto.sender_name,
-        sender_email: dto.sender_email,
-        sender_phone: dto.sender_phone ?? null,
-        message: dto.message,
-        status: 'new',
-      })
+      .insert(enquiryInsert)
       .select('id')
       .single();
 
     if (error) throw error;
 
-    // Increment enquiry_count — fire and forget (only when linked to a property)
     if (dto.property_id) {
       void Promise.resolve(
         this.supabase.client.rpc('increment_enquiry_count', { prop_id: dto.property_id }),
       );
     }
 
-    // Send email — non-blocking
     const testRecipient = this.config.get<string>('resend.testRecipient');
-    const toEmail = testRecipient || agentEmail;
+    const toEmail = testRecipient || contact.email;
     if (toEmail) {
       this.sendEnquiryEmail({
-        agentEmail: toEmail,
-        agentName,
+        recipientEmail: toEmail,
+        recipientName: contact.name,
         senderName: dto.sender_name,
         senderEmail: dto.sender_email,
         senderPhone: dto.sender_phone,
@@ -101,14 +122,29 @@ export class EnquiriesService {
     return { id: (enquiry as { id: string }).id };
   }
 
-  private async fetchAgentContact(agentId: string) {
+  private async fetchOwnerContact(ownerId: string): Promise<Contact> {
+    const { data: profile } = await this.supabase.client
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', ownerId)
+      .single();
+
+    return {
+      email: (profile as { email: string } | null)?.email ?? '',
+      name: (profile as { full_name: string | null } | null)?.full_name ?? '',
+      recipientId: ownerId,
+      isOwner: true,
+    };
+  }
+
+  private async fetchAgentContact(agentId: string): Promise<Contact> {
     const { data: agent } = await this.supabase.client
       .from('agents')
       .select('profile_id')
       .eq('id', agentId)
       .single();
 
-    if (!agent) return { agentEmail: '', agentName: '' };
+    if (!agent) return { email: '', name: '', recipientId: agentId, isOwner: false };
 
     const { data: profile } = await this.supabase.client
       .from('profiles')
@@ -117,21 +153,23 @@ export class EnquiriesService {
       .single();
 
     return {
-      agentEmail: (profile as { email: string } | null)?.email ?? '',
-      agentName: (profile as { full_name: string | null } | null)?.full_name ?? '',
+      email: (profile as { email: string } | null)?.email ?? '',
+      name: (profile as { full_name: string | null } | null)?.full_name ?? '',
+      recipientId: agentId,
+      isOwner: false,
     };
   }
 
   private async sendEnquiryEmail(params: {
-    agentEmail: string;
-    agentName: string;
+    recipientEmail: string;
+    recipientName: string;
     senderName: string;
     senderEmail: string;
     senderPhone?: string;
     message: string;
     address: string;
   }) {
-    const { agentEmail, agentName, senderName, senderEmail, senderPhone, message, address } = params;
+    const { recipientEmail, recipientName, senderName, senderEmail, senderPhone, message, address } = params;
     const fromEmail = this.config.get<string>('resend.fromEmail') ?? 'PropSphere <noreply@propsphere.app>';
 
     const phoneRow = senderPhone
@@ -161,7 +199,7 @@ export class EnquiriesService {
             <p style="margin:0 0 24px;font-size:14px;color:#6b7280">${address}</p>
 
             <p style="margin:0 0 16px;font-size:15px;color:#374151">
-              Hi ${agentName || 'there'},<br /><br />
+              Hi ${recipientName || 'there'},<br /><br />
               You have received a new enquiry for <strong>${address}</strong>.
               You can reply directly to this email to respond to ${senderName}.
             </p>
@@ -197,7 +235,7 @@ export class EnquiriesService {
 </html>`;
 
     const textLines = [
-      `Hi ${agentName || 'there'},`,
+      `Hi ${recipientName || 'there'},`,
       '',
       `You have a new enquiry for ${address}.`,
       '',
@@ -209,7 +247,7 @@ export class EnquiriesService {
 
     await this.resend.emails.send({
       from: fromEmail,
-      to: agentEmail,
+      to: recipientEmail,
       replyTo: senderEmail,
       subject: `New enquiry from ${senderName} — ${address}`,
       text: textLines.join('\n'),
