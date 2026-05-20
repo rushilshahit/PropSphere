@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, ExternalLink, Eye, MessageSquare, Clock, Plus } from 'lucide-react';
+import { Building2, ExternalLink, Eye, MessageSquare, Clock, Plus, UserPlus } from 'lucide-react';
 import { formatPrice } from '@propsphere/utils';
 import {
   useMyOwnerListings,
@@ -8,6 +8,7 @@ import {
   useDeleteOwnerListing,
   type OwnerListing,
 } from '@/api/owner-listings';
+import { InviteAgentModal } from '@/features/owner-listing/components/InviteAgentModal';
 import { Skeleton } from '@/components/ui';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -46,6 +47,7 @@ export default function MyListingsPage() {
   const updateStatus = useUpdateOwnerListingStatus();
   const deleteListing = useDeleteOwnerListing();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [inviteListing, setInviteListing] = useState<OwnerListing | null>(null);
 
   function handleMarkSold(id: string) {
     updateStatus.mutate({ id, status: 'sold' });
@@ -106,6 +108,13 @@ export default function MyListingsPage() {
           </Link>
         </div>
       )}
+
+      <InviteAgentModal
+        isOpen={inviteListing !== null}
+        onClose={() => setInviteListing(null)}
+        listingId={inviteListing?.id ?? ''}
+        listingAddress={inviteListing ? formatAddress(inviteListing) + ', ' + inviteListing.suburb : ''}
+      />
 
       {!isLoading && listings && listings.length > 0 && (
         <div className="bg-white rounded-card shadow-card overflow-hidden">
@@ -191,6 +200,14 @@ export default function MyListingsPage() {
                       </Link>
                       {listing.status === 'active' && (
                         <>
+                          <button
+                            type="button"
+                            onClick={() => setInviteListing(listing)}
+                            className="flex items-center gap-0.5 text-xs text-brand-primary hover:text-brand-primary/80 transition-colors"
+                          >
+                            <UserPlus className="w-3 h-3" />
+                            Invite an agent
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleMarkSold(listing.id)}
