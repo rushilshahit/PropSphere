@@ -2,6 +2,7 @@ export const UserRole = {
   BUYER: 'buyer',
   RENTER: 'renter',
   SELLER: 'seller',
+  PENDING_AGENT: 'pending_agent',
   AGENT: 'agent',
   ADMIN: 'admin',
 } as const;
@@ -14,6 +15,7 @@ export interface Profile {
   avatar_url: string | null;
   phone: string | null;
   role: UserRole;
+  pending_agent_since: string | null;
   created_at: string;
   updated_at: string;
 }
