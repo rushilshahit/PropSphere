@@ -41,6 +41,7 @@ export class EnquiriesService {
     }
 
     let address = 'General enquiry';
+    let suburb: string | undefined;
     let contact: Contact = { email: '', name: '', recipientId: null, isOwner: false };
 
     if (dto.property_id) {
@@ -53,6 +54,7 @@ export class EnquiriesService {
       if (!property) throw new NotFoundException('Property not found');
 
       const p = property as PropertyRow;
+      suburb = p.suburb;
       address = [
         p.unit_number ? `${p.unit_number}/${p.street_number}` : p.street_number,
         p.street_name,
@@ -114,6 +116,8 @@ export class EnquiriesService {
         senderPhone: dto.sender_phone,
         message: dto.message,
         address,
+        isOwner: contact.isOwner,
+        suburb,
       }).catch((err: unknown) => {
         console.error('[EnquiriesService] Failed to send enquiry email:', JSON.stringify(err));
       });
@@ -168,8 +172,10 @@ export class EnquiriesService {
     senderPhone?: string;
     message: string;
     address: string;
+    isOwner?: boolean;
+    suburb?: string;
   }) {
-    const { recipientEmail, recipientName, senderName, senderEmail, senderPhone, message, address } = params;
+    const { recipientEmail, recipientName, senderName, senderEmail, senderPhone, message, address, isOwner, suburb } = params;
     const fromEmail = this.config.get<string>('resend.fromEmail') ?? 'PropSphere <noreply@propsphere.app>';
 
     const phoneRow = senderPhone
@@ -245,11 +251,15 @@ export class EnquiriesService {
       message,
     ].filter((l): l is string => l !== null);
 
+    const subject = isOwner && suburb
+      ? `New enquiry on your ${suburb} property`
+      : `New enquiry from ${senderName} — ${address}`;
+
     await this.resend.emails.send({
       from: fromEmail,
       to: recipientEmail,
       replyTo: senderEmail,
-      subject: `New enquiry from ${senderName} — ${address}`,
+      subject,
       text: textLines.join('\n'),
       html,
     });

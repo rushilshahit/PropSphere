@@ -111,8 +111,8 @@ export interface PropertyDetail extends PropertySummary {
   enquiry_count: number;
   updated_at: string;
   inspections: Inspection[];
-  agent: Agent;
-  agency: Agency;
+  agent: Agent | null;
+  agency: Agency | null;
   price_history?: PriceHistoryRecord[];
 }
 

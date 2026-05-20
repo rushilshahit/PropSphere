@@ -23,7 +23,7 @@ export interface Enquiry {
 
 export interface CreateEnquiryInput {
   property_id?: string;
-  agent_id: string;
+  agent_id?: string;
   sender_name: string;
   sender_email: string;
   sender_phone?: string;

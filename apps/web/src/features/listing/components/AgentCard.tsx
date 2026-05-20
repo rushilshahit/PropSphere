@@ -1,11 +1,11 @@
 import { Mail, Phone, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type { PropertyDetail } from '@propsphere/types';
+import type { Agent, Agency } from '@propsphere/types';
 import { Button } from '@/components/ui';
 
 interface AgentCardProps {
-  agent: PropertyDetail['agent'];
-  agency: PropertyDetail['agency'];
+  agent: Agent;
+  agency: Agency;
   onEnquire: () => void;
 }
 
