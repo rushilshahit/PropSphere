@@ -1,5 +1,8 @@
 import type { Agent, Agency } from './agent';
+import type { ListingSource } from './owner-listing';
 import type { PriceHistoryRecord } from './price-history';
+
+export type { ListingSource };
 
 export const PropertyType = {
   HOUSE: 'house',
@@ -70,8 +73,11 @@ export interface PropertySummary {
   sale_method: SaleMethod | null;
   headline: string | null;
   images: PropertyImage[];
-  agent_id: string;
-  agency_id: string;
+  agent_id: string | null;
+  agency_id: string | null;
+  owner_id: string | null;
+  owner_name: string | null;
+  listing_source: ListingSource;
   published_at: string | null;
   created_at: string;
   virtual_tour_url?: string;

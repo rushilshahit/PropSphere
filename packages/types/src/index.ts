@@ -2,6 +2,7 @@ export * from './agent';
 export * from './alert';
 export * from './collection';
 export * from './enquiry';
+export * from './owner-listing';
 export * from './offers';
 export * from './price-history';
 export * from './property';
