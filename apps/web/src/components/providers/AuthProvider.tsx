@@ -4,6 +4,7 @@ import type { Profile } from '@propsphere/types';
 import { useAppDispatch } from '@/store/hooks';
 import {
   setInitialized,
+  setNeedsRoleSelection,
   setSession,
   setUser,
 } from '@/features/auth/store/authSlice';
@@ -52,6 +53,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ]);
         dispatch(setUser(profile));
         dispatch(setSavedIds(savedIds));
+
+        const oauthPending = sessionStorage.getItem('oauth_role_pending') === '1';
+        const isNewProfile =
+          profile !== null && Date.now() - new Date(profile.created_at).getTime() < 60_000;
+        if (oauthPending && isNewProfile) {
+          sessionStorage.removeItem('oauth_role_pending');
+          dispatch(setNeedsRoleSelection(true));
+        }
       } else {
         dispatch(setUser(null));
         dispatch(setSavedIds([]));

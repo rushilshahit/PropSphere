@@ -8,6 +8,7 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   initialized: boolean;
+  needsRoleSelection: boolean;
 }
 
 const initialState: AuthState = {
@@ -15,6 +16,7 @@ const initialState: AuthState = {
   session: null,
   loading: false,
   initialized: false,
+  needsRoleSelection: false,
 };
 
 export const authSlice = createSlice({
@@ -33,10 +35,13 @@ export const authSlice = createSlice({
     setInitialized(state, action: PayloadAction<boolean>) {
       state.initialized = action.payload;
     },
+    setNeedsRoleSelection(state, action: PayloadAction<boolean>) {
+      state.needsRoleSelection = action.payload;
+    },
   },
 });
 
-export const { setUser, setSession, setLoading, setInitialized } = authSlice.actions;
+export const { setUser, setSession, setLoading, setInitialized, setNeedsRoleSelection } = authSlice.actions;
 
 export const selectUser = (state: RootState) => state.auth.user;
 export const selectSession = (state: RootState) => state.auth.session;
@@ -46,5 +51,6 @@ export const selectAuthInitialized = (state: RootState) => state.auth.initialize
 export const selectUserRole = (state: RootState): UserRole | null =>
   state.auth.user?.role ?? null;
 export const selectIsAgent = (state: RootState) => state.auth.user?.role === 'agent';
+export const selectNeedsRoleSelection = (state: RootState) => state.auth.needsRoleSelection;
 
 export const authReducer = authSlice.reducer;
