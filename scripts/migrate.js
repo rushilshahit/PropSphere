@@ -535,6 +535,63 @@ DO $$ BEGIN
   CREATE POLICY "agent_certs agent own" ON agent_certifications
     USING (agent_id IN (SELECT id FROM agents WHERE profile_id = auth.uid()));
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================
+-- OWNER LISTING ADDITIONS
+-- ============================================================
+
+-- New enum: listing_source
+DO $$ BEGIN
+  CREATE TYPE listing_source AS ENUM ('agent', 'owner');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Make agent_id and agency_id nullable on properties
+ALTER TABLE properties ALTER COLUMN agent_id  DROP NOT NULL;
+ALTER TABLE properties ALTER COLUMN agency_id DROP NOT NULL;
+
+-- New columns on properties
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS owner_id        UUID;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS listing_source  listing_source NOT NULL DEFAULT 'agent';
+
+-- Make agent_id nullable on enquiries and add owner_id
+ALTER TABLE enquiries ALTER COLUMN agent_id DROP NOT NULL;
+ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS owner_id UUID;
+
+-- Indexes for new columns
+CREATE INDEX IF NOT EXISTS idx_properties_owner_id     ON properties(owner_id)    WHERE owner_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_properties_listing_src  ON properties(listing_source);
+CREATE INDEX IF NOT EXISTS idx_enquiries_owner_id      ON enquiries(owner_id)     WHERE owner_id IS NOT NULL;
+
+-- New table: listing_invitations
+CREATE TABLE IF NOT EXISTS listing_invitations (
+  id           UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  property_id  UUID        NOT NULL,
+  owner_id     UUID        NOT NULL,
+  agent_id     UUID,
+  token        TEXT        NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
+  status       TEXT        NOT NULL DEFAULT 'pending'
+                           CHECK (status IN ('pending','accepted','declined','expired')),
+  invited_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  accepted_at  TIMESTAMPTZ,
+  declined_at  TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_listing_inv_property_id ON listing_invitations(property_id);
+CREATE INDEX IF NOT EXISTS idx_listing_inv_owner_id    ON listing_invitations(owner_id);
+CREATE INDEX IF NOT EXISTS idx_listing_inv_agent_id    ON listing_invitations(agent_id) WHERE agent_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_listing_inv_token       ON listing_invitations(token);
+
+-- RLS for listing_invitations
+ALTER TABLE listing_invitations ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "inv owner reads own" ON listing_invitations
+    FOR SELECT USING (owner_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY "inv agent reads own" ON listing_invitations
+    FOR SELECT USING (agent_id IN (SELECT id FROM agents WHERE profile_id = auth.uid()));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 `;
 
 async function migrate() {
