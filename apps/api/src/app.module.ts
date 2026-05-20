@@ -12,6 +12,7 @@ import { HomeModule } from './modules/home/home.module';
 import { MapsModule } from './modules/maps/maps.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OffersModule } from './modules/offers/offers.module';
+import { OwnerListingsModule } from './modules/owner-listings/owner-listings.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { UsersModule } from './modules/users/users.module';
 import { SavedSearchesModule } from './modules/saved-searches/saved-searches.module';
@@ -41,6 +42,7 @@ import { SuburbsModule } from './modules/suburbs/suburbs.module';
     SavedSearchesModule,
     NotificationsModule,
     OffersModule,
+    OwnerListingsModule,
     UsersModule,
   ],
   providers: [SupabaseService],
