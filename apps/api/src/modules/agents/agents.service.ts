@@ -130,6 +130,14 @@ export interface AnalyticsListing {
   published_at: string | null;
 }
 
+export interface AgentSearchResult {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  agency_name: string | null;
+  suburb: string | null;
+}
+
 export interface AgentAnalytics {
   totalViews: number;
   totalEnquiries: number;
@@ -480,6 +488,60 @@ export class AgentsService {
           : 0,
       })),
     };
+  }
+
+  async searchAgents(query: string): Promise<AgentSearchResult[]> {
+    if (query.length < 2) return [];
+
+    const { data: profiles } = await this.supabase.client
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .ilike('full_name', `%${query}%`)
+      .eq('role', 'agent')
+      .limit(8);
+
+    if (!profiles?.length) return [];
+
+    const profileRows = profiles as { id: string; full_name: string | null; avatar_url: string | null }[];
+    const profileIds = profileRows.map((p) => p.id);
+
+    const { data: agents } = await this.supabase.client
+      .from('agents')
+      .select('id, profile_id, agency_id')
+      .in('profile_id', profileIds)
+      .eq('is_active', true);
+
+    if (!agents?.length) return [];
+
+    const agentRows = agents as { id: string; profile_id: string; agency_id: string }[];
+    const agencyIds = [...new Set(agentRows.map((a) => a.agency_id))];
+
+    const { data: agencies } = await this.supabase.client
+      .from('agencies')
+      .select('id, name, suburb')
+      .in('id', agencyIds);
+
+    const agencyMap = new Map<string, { name: string; suburb: string }>();
+    for (const ag of (agencies ?? []) as { id: string; name: string; suburb: string }[]) {
+      agencyMap.set(ag.id, { name: ag.name, suburb: ag.suburb });
+    }
+
+    const profileMap = new Map<string, { full_name: string | null; avatar_url: string | null }>();
+    for (const p of profileRows) {
+      profileMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url });
+    }
+
+    return agentRows.map((a) => {
+      const profile = profileMap.get(a.profile_id);
+      const agency = agencyMap.get(a.agency_id);
+      return {
+        id: a.id,
+        full_name: profile?.full_name ?? null,
+        avatar_url: profile?.avatar_url ?? null,
+        agency_name: agency?.name ?? null,
+        suburb: agency?.suburb ?? null,
+      };
+    });
   }
 
   async getSoldHistory(slug: string): Promise<unknown[]> {
