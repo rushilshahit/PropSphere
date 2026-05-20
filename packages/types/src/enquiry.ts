@@ -9,7 +9,8 @@ export type EnquiryStatus = (typeof EnquiryStatus)[keyof typeof EnquiryStatus];
 export interface Enquiry {
   id: string;
   property_id: string;
-  agent_id: string;
+  agent_id: string | null;
+  owner_id: string | null;
   sender_id: string | null;
   sender_name: string;
   sender_email: string;

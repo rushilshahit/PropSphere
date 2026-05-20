@@ -73,7 +73,7 @@ export class AgenciesService {
       await Promise.all([
         this.supabase.client
           .from('agents')
-          .select('id, slug, is_verified, profile:profiles(full_name, avatar_url)')
+          .select('id, slug, is_verified, profile_id')
           .eq('agency_id', typedAgency.id)
           .eq('is_verified', true),
         this.supabase.client
@@ -104,31 +104,47 @@ export class AgenciesService {
           .gte('sold_at', oneYearAgo),
       ]);
 
-    const rawAgents = (agentsRes.data ?? []) as unknown as {
-      id: string; slug: string | null; is_verified: boolean;
-      profile: { full_name: string | null; avatar_url: string | null } | null;
+    const rawAgents = (agentsRes.data ?? []) as {
+      id: string; slug: string | null; is_verified: boolean; profile_id: string;
     }[];
 
     const agentIds = rawAgents.map((a) => a.id);
+    const profileIds = rawAgents.map((a) => a.profile_id);
+
+    const [listingCountsResult, profilesResult] = await Promise.all([
+      agentIds.length
+        ? this.supabase.client
+            .from('properties')
+            .select('agent_id')
+            .in('agent_id', agentIds)
+            .eq('status', 'active')
+        : Promise.resolve({ data: [] }),
+      profileIds.length
+        ? this.supabase.client
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', profileIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
     const listingCountsMap = new Map<string, number>();
-    if (agentIds.length) {
-      const { data: agentListings } = await this.supabase.client
-        .from('properties')
-        .select('agent_id')
-        .in('agent_id', agentIds)
-        .eq('status', 'active');
-      for (const row of agentListings ?? []) {
-        const r = row as { agent_id: string };
-        listingCountsMap.set(r.agent_id, (listingCountsMap.get(r.agent_id) ?? 0) + 1);
-      }
+    for (const row of listingCountsResult.data ?? []) {
+      const r = row as { agent_id: string };
+      listingCountsMap.set(r.agent_id, (listingCountsMap.get(r.agent_id) ?? 0) + 1);
+    }
+
+    const profilesMap = new Map<string, { full_name: string | null; avatar_url: string | null }>();
+    for (const p of profilesResult.data ?? []) {
+      const prof = p as { id: string; full_name: string | null; avatar_url: string | null };
+      profilesMap.set(prof.id, { full_name: prof.full_name, avatar_url: prof.avatar_url });
     }
 
     const agents = rawAgents.map((a) => ({
       id: a.id,
       slug: a.slug,
       is_verified: a.is_verified,
-      full_name: a.profile?.full_name ?? null,
-      avatar_url: a.profile?.avatar_url ?? null,
+      full_name: profilesMap.get(a.profile_id)?.full_name ?? null,
+      avatar_url: profilesMap.get(a.profile_id)?.avatar_url ?? null,
       active_listings: listingCountsMap.get(a.id) ?? 0,
     }));
 

@@ -9,6 +9,7 @@ interface ActivePricePanelProps {
   isAuthenticated: boolean;
   onEnquire: () => void;
   onSave: () => void;
+  onShare: () => void;
 }
 
 function daysOnMarket(publishedAt: string | null): number {
@@ -22,6 +23,7 @@ export function ActivePricePanel({
   isAuthenticated,
   onEnquire,
   onSave,
+  onShare,
 }: ActivePricePanelProps) {
   const dom = daysOnMarket(property.published_at);
 
@@ -54,7 +56,7 @@ export function ActivePricePanel({
             {isSaved ? 'Saved' : 'Save property'}
           </Button>
         )}
-        <Button variant="ghost" size="sm" className="w-full">
+        <Button variant="ghost" size="sm" className="w-full" onClick={onShare}>
           <Share2 className="w-4 h-4" />
           Share
         </Button>

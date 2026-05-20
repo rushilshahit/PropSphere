@@ -40,7 +40,8 @@ export function useRecentlyViewed(enabled: boolean) {
     queryFn: async (): Promise<RecentlyViewedItem[]> => {
       const res = await authFetch('/api/users/recently-viewed');
       if (!res.ok) throw new Error('Failed to fetch recently viewed');
-      return res.json() as Promise<RecentlyViewedItem[]>;
+      const json = await res.json() as { data: RecentlyViewedItem[] };
+      return json.data;
     },
     enabled,
     staleTime: 60_000,

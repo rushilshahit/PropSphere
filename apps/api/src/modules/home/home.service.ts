@@ -12,9 +12,10 @@ async function attachImages(
   const ids = properties.map((p) => p['id'] as string);
   const { data: images } = await supabase.client
     .from('property_images')
-    .select('id, property_id, cdn_url, display_order')
+    .select('id, property_id, cdn_url, sort_order')
     .in('property_id', ids)
-    .order('display_order');
+    .eq('is_floor_plan', false)
+    .order('sort_order');
   const byProperty = new Map<string, unknown[]>();
   for (const img of images ?? []) {
     const pid = (img as { property_id: string }).property_id;

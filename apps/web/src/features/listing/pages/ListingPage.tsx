@@ -24,6 +24,7 @@ import { NearbyPlaces } from '../components/NearbyPlaces';
 import { CommuteCalculator } from '../components/CommuteCalculator';
 import { ActivePricePanel } from '../components/ActivePricePanel';
 import { SoldPricePanel } from '../components/SoldPricePanel';
+import { ShareModal } from '../components/ShareModal';
 import { PriceHistoryChart } from '../components/PriceHistoryChart';
 import { AppraisalCTA } from '../components/AppraisalCTA';
 
@@ -96,6 +97,7 @@ export default function ListingPage() {
   const navigate = useNavigate();
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<NearbyPlace | null>(null);
   const mapRef = useRef<MapRef>(null);
 
@@ -120,6 +122,16 @@ export default function ListingPage() {
 
   const address = buildAddress(property);
   const isSold = property.status === 'sold';
+
+  function handleShare() {
+    const shareUrl = window.location.href;
+    const shareTitle = `${address}${property?.headline ? ` — ${property.headline}` : ''}`;
+    if (navigator.share) {
+      void navigator.share({ title: shareTitle, url: shareUrl });
+    } else {
+      setShareOpen(true);
+    }
+  }
 
   return (
     <>
@@ -186,11 +198,13 @@ export default function ListingPage() {
                   />
                 </section>
 
-                <AppraisalCTA
-                  suburb={property.suburb}
-                  agentId={property.agent_id}
-                  propertyId={property.id}
-                />
+                {property.agent_id && (
+                  <AppraisalCTA
+                    suburb={property.suburb}
+                    agentId={property.agent_id}
+                    propertyId={property.id}
+                  />
+                )}
               </>
             )}
 
@@ -238,6 +252,7 @@ export default function ListingPage() {
                   isAuthenticated={isAuthenticated}
                   onEnquire={() => setEnquiryOpen(true)}
                   onSave={toggle}
+                  onShare={handleShare}
                 />
               )}
 
@@ -251,7 +266,7 @@ export default function ListingPage() {
         </div>
       </div>
 
-      {!isSold && (
+      {!isSold && property.agent_id && (
         <EnquiryModal
           propertyId={property.id}
           agentId={property.agent_id}
@@ -260,7 +275,7 @@ export default function ListingPage() {
           onClose={() => setEnquiryOpen(false)}
         />
       )}
-      {!isSold && property.listing_type === 'buy' && !isMyListing && (
+      {!isSold && property.listing_type === 'buy' && !isMyListing && property.agent_id && (
         <OfferModal
           propertyId={property.id}
           agentId={property.agent_id}
@@ -273,6 +288,12 @@ export default function ListingPage() {
         propertyId={property.id}
         isOpen={saveModalOpen}
         onClose={closeSaveModal}
+      />
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={window.location.href}
+        title={`${address}${property.headline ? ` — ${property.headline}` : ''}`}
       />
     </>
   );

@@ -84,6 +84,18 @@ export function PropertyImageUploader({ propertyId }: Props) {
     setImages((prev) => prev.filter((img) => img.id !== image.id));
   };
 
+  const handleToggleFloorPlan = async (image: PropertyImage) => {
+    const newValue = !image.is_floor_plan;
+    const { error: updateErr } = await supabase
+      .from('property_images')
+      .update({ is_floor_plan: newValue })
+      .eq('id', image.id);
+    if (updateErr) { setError(updateErr.message); return; }
+    setImages((prev) =>
+      prev.map((img) => (img.id === image.id ? { ...img, is_floor_plan: newValue } : img)),
+    );
+  };
+
   if (!propertyId) {
     return (
       <div className="text-center py-8 text-neutral-500">
@@ -140,19 +152,39 @@ export function PropertyImageUploader({ propertyId }: Props) {
                 alt={`Property image ${idx + 1}`}
                 className="w-full h-full object-cover"
               />
-              {idx === 0 && (
+              {/* Top-left badge: Hero or Floor Plan */}
+              {img.is_floor_plan ? (
+                <span className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">
+                  Floor Plan
+                </span>
+              ) : idx === 0 ? (
                 <span className="absolute top-2 left-2 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
                   Hero
                 </span>
-              )}
-              <button
-                type="button"
-                onClick={() => { void handleDelete(img); }}
-                className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label="Delete image"
-              >
-                ✕
-              </button>
+              ) : null}
+              {/* Hover controls */}
+              <div className="absolute bottom-2 left-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => { void handleToggleFloorPlan(img); }}
+                  className={`flex-1 text-xs font-medium px-2 py-1 rounded transition-colors ${
+                    img.is_floor_plan
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-white/90 text-neutral-800 hover:bg-white'
+                  }`}
+                  title={img.is_floor_plan ? 'Remove floor plan flag' : 'Mark as floor plan'}
+                >
+                  {img.is_floor_plan ? '✓ Floor Plan' : 'Floor Plan'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { void handleDelete(img); }}
+                  className="bg-red-600 text-white rounded px-2 py-1 text-xs hover:bg-red-700 transition-colors"
+                  aria-label="Delete image"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
           ))}
         </div>
