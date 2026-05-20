@@ -19,13 +19,16 @@ type FormValues = z.infer<typeof schema>;
 
 interface EnquiryModalProps {
   propertyId?: string;
-  agentId: string;
+  agentId?: string;
   agentName?: string;
+  ownerId?: string;
+  ownerName?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function EnquiryModal({ propertyId, agentId, agentName, isOpen, onClose }: EnquiryModalProps) {
+export function EnquiryModal({ propertyId, agentId, agentName, ownerId, ownerName, isOpen, onClose }: EnquiryModalProps) {
+  const isOwner = Boolean(ownerId);
   const { toast } = useToast();
   const { user, session } = useAuth();
   const { mutate, isPending, error } = useCreateEnquiry();
@@ -66,10 +69,15 @@ export function EnquiryModal({ propertyId, agentId, agentName, isOpen, onClose }
 
   const onSubmit = (data: FormValues) => {
     mutate(
-      { ...data, ...(propertyId ? { property_id: propertyId } : {}), agent_id: agentId },
+      {
+        ...data,
+        ...(propertyId ? { property_id: propertyId } : {}),
+        ...(agentId ? { agent_id: agentId } : {}),
+      },
       {
         onSuccess: () => {
-          toast(agentName ? `Email sent to ${agentName}` : 'Enquiry sent!', 'success');
+          const recipientName = isOwner ? ownerName : agentName;
+          toast(recipientName ? `Email sent to ${recipientName}` : 'Enquiry sent!', 'success');
           reset();
           onClose();
         },
@@ -92,11 +100,15 @@ export function EnquiryModal({ propertyId, agentId, agentName, isOpen, onClose }
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
           <div>
             <h2 className="text-base font-semibold text-neutral-900">
-              {agentName ? `Email ${agentName}` : 'Send enquiry'}
+              {isOwner
+                ? (ownerName ? `Email ${ownerName}` : 'Email owner')
+                : (agentName ? `Email ${agentName}` : 'Send enquiry')}
             </h2>
-            {agentName && (
-              <p className="text-xs text-neutral-500 mt-0.5">Your message will be emailed directly to the agent</p>
-            )}
+            <p className="text-xs text-neutral-500 mt-0.5">
+              {isOwner
+                ? 'Your message will be emailed directly to the owner'
+                : 'Your message will be emailed directly to the agent'}
+            </p>
           </div>
           <button
             type="button"
