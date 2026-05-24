@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
 import type { CreateOwnerListingDto } from './dto/create-owner-listing.dto';
+import type { CreateInspectionsDto } from './dto/create-inspections.dto';
 import type { UpdateOwnerListingStatusDto } from './dto/update-owner-listing-status.dto';
 import type { UpdateOwnerListingDto } from './dto/update-owner-listing.dto';
 
@@ -54,6 +55,45 @@ export class OwnerListingsService {
     if (error) throw new BadRequestException(error.message);
 
     return data ?? [];
+  }
+
+  async getDashboardStats(userId: string) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [
+      { count: activeListings },
+      { count: enquiriesToday },
+      { data: viewData },
+    ] = await Promise.all([
+      this.supabase.client
+        .from('properties')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', userId)
+        .eq('listing_source', 'owner')
+        .eq('status', 'active'),
+      this.supabase.client
+        .from('enquiries')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', userId)
+        .gte('created_at', todayStart.toISOString()),
+      this.supabase.client
+        .from('properties')
+        .select('view_count')
+        .eq('owner_id', userId)
+        .eq('listing_source', 'owner'),
+    ]);
+
+    const totalViews = (viewData ?? []).reduce(
+      (sum, p: { view_count: number | null }) => sum + (p.view_count ?? 0),
+      0,
+    );
+
+    return {
+      activeListings: activeListings ?? 0,
+      enquiriesToday: enquiriesToday ?? 0,
+      totalViews,
+    };
   }
 
   async getActiveCount(userId: string) {
@@ -200,6 +240,32 @@ export class OwnerListingsService {
     if (error) throw new BadRequestException(error.message);
 
     return { success: true };
+  }
+
+  async createInspections(id: string, dto: CreateInspectionsDto, userId: string) {
+    const { data: existing } = await this.supabase.client
+      .from('properties')
+      .select('owner_id')
+      .eq('id', id)
+      .eq('listing_source', 'owner')
+      .single();
+
+    if (!existing) throw new NotFoundException('Listing not found');
+    if ((existing as { owner_id: string }).owner_id !== userId) {
+      throw new ForbiddenException('Not your listing');
+    }
+
+    const rows = dto.slots.map((slot) => ({
+      property_id: id,
+      type: slot.type,
+      starts_at: slot.starts_at,
+      ends_at: slot.ends_at,
+    }));
+
+    const { error } = await this.supabase.client.from('inspections').insert(rows);
+    if (error) throw new BadRequestException(error.message);
+
+    return { count: rows.length };
   }
 
   private async assertSellerRole(userId: string) {

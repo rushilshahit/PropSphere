@@ -24,14 +24,16 @@ export function useAuth() {
   const loading = useAppSelector(selectAuthLoading);
   const initialized = useAppSelector(selectAuthInitialized);
 
-  async function signOut() {
-    // scope: 'local' clears localStorage without a network call — fast and reliable
-    await supabase.auth.signOut();
+  function signOut() {
+    // Navigate home first so ProtectedRoute never sees isAuthenticated=false
+    // on a guarded path and redirects with requireAuth:true (which opens the modal).
+    navigate('/');
     dispatch(setSession(null));
     dispatch(setUser(null));
     dispatch(setSavedIds([]));
     queryClient.clear();
-    navigate('/');
+    // Fire-and-forget: scope:'local' clears localStorage without a network round-trip.
+    void supabase.auth.signOut({ scope: 'local' });
   }
 
   return { user, session, isAuthenticated, isAgent, loading, initialized, signOut };

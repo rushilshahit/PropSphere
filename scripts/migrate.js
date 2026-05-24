@@ -11,8 +11,12 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
 
 -- Enums
 DO $$ BEGIN
-  CREATE TYPE user_role AS ENUM ('buyer','renter','seller','agent','admin');
+  CREATE TYPE user_role AS ENUM ('buyer','renter','seller','pending_agent','agent','admin');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- Ensure pending_agent exists in case the enum was created without it
+DO $$ BEGIN
+  ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'pending_agent';
+EXCEPTION WHEN others THEN NULL; END $$;
 DO $$ BEGIN
   CREATE TYPE listing_type AS ENUM ('buy','rent','sold');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;

@@ -1,5 +1,8 @@
 import { BarChart2, MessageSquare, Eye } from 'lucide-react';
 import { useAgentStats } from '@/api/agents';
+import { useOwnerDashboardStats } from '@/api/owner-listings';
+import { useAppSelector } from '@/store/hooks';
+import { selectIsAgent } from '@/features/auth/store/authSlice';
 import { Skeleton } from '@/components/ui';
 
 interface StatCardProps {
@@ -33,7 +36,10 @@ function StatsSkeleton() {
 }
 
 export default function DashboardHome() {
-  const { data: stats, isLoading, isError } = useAgentStats();
+  const isAgent = useAppSelector(selectIsAgent);
+  const agentStats = useAgentStats();
+  const ownerStats = useOwnerDashboardStats();
+  const { data: stats, isLoading, isError } = isAgent ? agentStats : ownerStats;
 
   return (
     <div className="space-y-6">

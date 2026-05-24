@@ -108,7 +108,7 @@ export class CollectionsService {
     const { data: properties, error: propErr } = await this.supabase.client
       .from('properties')
       .select(
-        'id, listing_type, property_type, status, unit_number, street_number, street_name, suburb, state, postcode, lat, lng, bedrooms, bathrooms, car_spaces, land_size_sqm, price, price_display, is_price_hidden, sale_method, headline, agent_id, agency_id, published_at, created_at',
+        'id, listing_type, property_type, status, unit_number, street_number, street_name, suburb, state, postcode, lat, lng, bedrooms, bathrooms, car_spaces, land_size_sqm, price, price_display, is_price_hidden, sale_method, headline, agent_id, agency_id, owner_id, listing_source, published_at, created_at',
       )
       .in('id', propertyIds);
 

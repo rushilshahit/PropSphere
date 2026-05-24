@@ -67,6 +67,8 @@ const BecomeAnAgentPage = lazy(() => import('./features/agent-signup/pages/Becom
 
 const AcceptInvitationPage = lazy(() => import('./features/owner-listing/pages/AcceptInvitationPage'));
 
+const PostPropertyPage = lazy(() => import('./features/owner-listing/pages/PostPropertyPage'));
+
 function StubPage({ label }: { label: string }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 text-center text-neutral-400">
@@ -168,7 +170,13 @@ export const router = createBrowserRouter([
       },
       {
         path: 'post-property',
-        element: <Page><StubPage label="Post a Property" /></Page>,
+        element: (
+          <ProtectedRoute roles={['seller', 'agent']}>
+            <Suspense fallback={<Loading />}>
+              <PostPropertyPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'finance',

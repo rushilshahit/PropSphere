@@ -8,7 +8,7 @@ import type { UpdateStatusDto } from './dto/update-status.dto';
 const PAGE_SIZE = 24;
 
 const PROPERTY_SUMMARY_COLS =
-  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, sold_at, sold_price, sold_price_is_confidential, lat, lng, agent_id, agency_id, created_at, bhk_config, virtual_tour_url, auction_at';
+  'id, headline, suburb, state, postcode, unit_number, street_number, street_name, price, price_display, is_price_hidden, bedrooms, bathrooms, car_spaces, land_size_sqm, listing_type, property_type, status, sale_method, published_at, sold_at, sold_price, sold_price_is_confidential, lat, lng, agent_id, agency_id, owner_id, listing_source, created_at, bhk_config, virtual_tour_url, auction_at';
 
 @Injectable()
 export class PropertiesService {
@@ -99,7 +99,9 @@ export class PropertiesService {
     const status = (property as { status: string }).status;
     if (status !== 'active' && status !== 'sold') throw new NotFoundException('Property not found');
 
-    const [images, inspections, agent, agency] = await Promise.all([
+    const typedProp = property as { agent_id: string; agency_id: string; listing_source: string; owner_id: string | null };
+
+    const [images, inspections, agent, agency, ownerProfile] = await Promise.all([
       this.supabase.client
         .from('property_images')
         .select('id, property_id, storage_path, cdn_url, caption, sort_order, is_floor_plan, created_at')
@@ -111,16 +113,24 @@ export class PropertiesService {
         .eq('property_id', id)
         .eq('cancelled', false)
         .gt('starts_at', new Date().toISOString()),
-      this.fetchAgent((property as { agent_id: string }).agent_id),
+      this.fetchAgent(typedProp.agent_id),
       this.supabase.client
         .from('agencies')
         .select('id, name, slug, logo_url, website, phone, address, suburb, state, postcode, created_at')
-        .eq('id', (property as { agency_id: string }).agency_id)
+        .eq('id', typedProp.agency_id)
         .single(),
+      typedProp.listing_source === 'owner' && typedProp.owner_id
+        ? this.supabase.client
+            .from('profiles')
+            .select('full_name')
+            .eq('id', typedProp.owner_id)
+            .single()
+        : Promise.resolve({ data: null }),
     ]);
 
     return {
       ...property,
+      owner_name: (ownerProfile.data as { full_name: string } | null)?.full_name ?? null,
       images: images.data ?? [],
       inspections: inspections.data ?? [],
       agent: agent ?? null,

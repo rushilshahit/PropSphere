@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import { SupabaseService } from '../../database/supabase.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { CreateEnquiryDto } from './dto/create-enquiry.dto';
 
 interface PropertyRow {
@@ -18,6 +19,8 @@ interface Contact {
   email: string;
   name: string;
   recipientId: string | null;
+  /** Profile user ID to route in-app notifications — owner_id for owner listings, agent profile_id for agent listings */
+  notificationUserId: string | null;
   isOwner: boolean;
 }
 
@@ -28,6 +31,7 @@ export class EnquiriesService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {
     this.resend = new Resend(this.config.get<string>('resend.apiKey'));
   }
@@ -42,7 +46,7 @@ export class EnquiriesService {
 
     let address = 'General enquiry';
     let suburb: string | undefined;
-    let contact: Contact = { email: '', name: '', recipientId: null, isOwner: false };
+    let contact: Contact = { email: '', name: '', recipientId: null, notificationUserId: null, isOwner: false };
 
     if (dto.property_id) {
       const { data: property } = await this.supabase.client
@@ -105,6 +109,15 @@ export class EnquiriesService {
       );
     }
 
+    if (contact.notificationUserId) {
+      void this.notifications.dispatch(contact.notificationUserId, {
+        type: 'system',
+        title: 'New enquiry received',
+        body: `${dto.sender_name} sent an enquiry about ${address}`,
+        data: { enquiryId: (enquiry as { id: string }).id, ...(dto.property_id ? { propertyId: dto.property_id } : {}) },
+      });
+    }
+
     const testRecipient = this.config.get<string>('resend.testRecipient');
     const toEmail = testRecipient || contact.email;
     if (toEmail) {
@@ -137,6 +150,7 @@ export class EnquiriesService {
       email: (profile as { email: string } | null)?.email ?? '',
       name: (profile as { full_name: string | null } | null)?.full_name ?? '',
       recipientId: ownerId,
+      notificationUserId: ownerId,
       isOwner: true,
     };
   }
@@ -148,18 +162,20 @@ export class EnquiriesService {
       .eq('id', agentId)
       .single();
 
-    if (!agent) return { email: '', name: '', recipientId: agentId, isOwner: false };
+    if (!agent) return { email: '', name: '', recipientId: agentId, notificationUserId: null, isOwner: false };
 
+    const profileId = (agent as { profile_id: string }).profile_id;
     const { data: profile } = await this.supabase.client
       .from('profiles')
       .select('email, full_name')
-      .eq('id', (agent as { profile_id: string }).profile_id)
+      .eq('id', profileId)
       .single();
 
     return {
       email: (profile as { email: string } | null)?.email ?? '',
       name: (profile as { full_name: string | null } | null)?.full_name ?? '',
       recipientId: agentId,
+      notificationUserId: profileId,
       isOwner: false,
     };
   }

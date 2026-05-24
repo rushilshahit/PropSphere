@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
-import type { TrackRecentlyViewedDto } from './dto/users.dto';
+import { BadRequestException } from '@nestjs/common';
+import type { TrackRecentlyViewedDto, UpdateProfileDto } from './dto/users.dto';
 
 interface RecentlyViewedRow {
   user_id: string;
@@ -13,13 +14,7 @@ interface EnquiryRow {
   message: string;
   created_at: string;
   status: string;
-  properties: {
-    id: string;
-    headline: string | null;
-    suburb: string;
-    state: string;
-    hero_image_url: string | null;
-  } | null;
+  property_id: string | null;
 }
 
 interface OfferRow {
@@ -27,18 +22,46 @@ interface OfferRow {
   amount: number;
   status: string;
   created_at: string;
-  properties: {
-    id: string;
-    headline: string | null;
-    suburb: string;
-    state: string;
-    hero_image_url: string | null;
-  } | null;
+  property_id: string | null;
+}
+
+interface PropertyStub {
+  id: string;
+  headline: string | null;
+  suburb: string;
+  state: string;
+}
+
+interface ImageRow {
+  property_id: string;
+  cdn_url: string;
 }
 
 @Injectable()
 export class UsersService {
   constructor(private readonly supabase: SupabaseService) {}
+
+  async getMyProfile(userId: string) {
+    const { data } = await this.supabase.client
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    return data ?? null;
+  }
+
+  async updateProfile(userId: string, email: string, dto: UpdateProfileDto): Promise<void> {
+    const patch: Record<string, unknown> = { email };
+    if (dto.full_name !== undefined) patch.full_name = dto.full_name;
+    if (dto.phone !== undefined) patch.phone = dto.phone;
+    if (dto.role !== undefined) patch.role = dto.role;
+
+    const { error } = await this.supabase.client
+      .from('profiles')
+      .upsert({ id: userId, ...patch }, { onConflict: 'id' });
+
+    if (error) throw new BadRequestException(error.message);
+  }
 
   async trackRecentlyViewed(userId: string, dto: TrackRecentlyViewedDto): Promise<void> {
     await this.supabase.client
@@ -85,58 +108,104 @@ export class UsersService {
   async getMyEnquiries(userId: string) {
     const { data, error } = await this.supabase.client
       .from('enquiries')
-      .select(
-        'id, message, created_at, status, properties:property_id(id, headline, suburb, state, hero_image_url)',
-      )
+      .select('id, message, created_at, status, property_id')
       .eq('sender_id', userId)
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (error) throw error;
 
-    return ((data ?? []) as unknown as EnquiryRow[]).map((e) => ({
-      id: e.id,
-      message: e.message,
-      createdAt: e.created_at,
-      status: e.status,
-      property: e.properties
-        ? {
-            id: e.properties.id,
-            headline: e.properties.headline,
-            suburb: e.properties.suburb,
-            state: e.properties.state,
-            heroImageUrl: e.properties.hero_image_url,
-          }
-        : null,
-    }));
+    const rows = (data ?? []) as EnquiryRow[];
+    const propertyIds = [...new Set(rows.map((r) => r.property_id).filter((id): id is string => Boolean(id)))];
+
+    const propertyMap = new Map<string, PropertyStub>();
+    const heroMap = new Map<string, string>();
+
+    if (propertyIds.length) {
+      const [propertiesResult, imagesResult] = await Promise.all([
+        this.supabase.client
+          .from('properties')
+          .select('id, headline, suburb, state')
+          .in('id', propertyIds),
+        this.supabase.client
+          .from('property_images')
+          .select('property_id, cdn_url')
+          .in('property_id', propertyIds)
+          .eq('is_floor_plan', false)
+          .order('sort_order'),
+      ]);
+
+      for (const p of (propertiesResult.data ?? []) as PropertyStub[]) {
+        propertyMap.set(p.id, p);
+      }
+      for (const img of (imagesResult.data ?? []) as ImageRow[]) {
+        if (!heroMap.has(img.property_id)) heroMap.set(img.property_id, img.cdn_url);
+      }
+    }
+
+    return rows.map((e) => {
+      const prop = e.property_id ? propertyMap.get(e.property_id) : undefined;
+      return {
+        id: e.id,
+        message: e.message,
+        createdAt: e.created_at,
+        status: e.status,
+        property: prop
+          ? { id: prop.id, headline: prop.headline, suburb: prop.suburb, state: prop.state, heroImageUrl: heroMap.get(prop.id) ?? null }
+          : null,
+      };
+    });
   }
 
   async getMyOffers(userId: string) {
     const { data, error } = await this.supabase.client
       .from('offers')
-      .select(
-        'id, amount, status, created_at, properties:property_id(id, headline, suburb, state, hero_image_url)',
-      )
+      .select('id, amount, status, created_at, property_id')
       .eq('sender_id', userId)
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (error) throw error;
 
-    return ((data ?? []) as unknown as OfferRow[]).map((o) => ({
-      id: o.id,
-      amount: o.amount,
-      status: o.status,
-      createdAt: o.created_at,
-      property: o.properties
-        ? {
-            id: o.properties.id,
-            headline: o.properties.headline,
-            suburb: o.properties.suburb,
-            state: o.properties.state,
-            heroImageUrl: o.properties.hero_image_url,
-          }
-        : null,
-    }));
+    const rows = (data ?? []) as OfferRow[];
+    const propertyIds = [...new Set(rows.map((r) => r.property_id).filter((id): id is string => Boolean(id)))];
+
+    const propertyMap = new Map<string, PropertyStub>();
+    const heroMap = new Map<string, string>();
+
+    if (propertyIds.length) {
+      const [propertiesResult, imagesResult] = await Promise.all([
+        this.supabase.client
+          .from('properties')
+          .select('id, headline, suburb, state')
+          .in('id', propertyIds),
+        this.supabase.client
+          .from('property_images')
+          .select('property_id, cdn_url')
+          .in('property_id', propertyIds)
+          .eq('is_floor_plan', false)
+          .order('sort_order'),
+      ]);
+
+      for (const p of (propertiesResult.data ?? []) as PropertyStub[]) {
+        propertyMap.set(p.id, p);
+      }
+      for (const img of (imagesResult.data ?? []) as ImageRow[]) {
+        if (!heroMap.has(img.property_id)) heroMap.set(img.property_id, img.cdn_url);
+      }
+    }
+
+    return rows.map((o) => {
+      const prop = o.property_id ? propertyMap.get(o.property_id) : undefined;
+      return {
+        id: o.id,
+        amount: o.amount,
+        status: o.status,
+        createdAt: o.created_at,
+        property: prop
+          ? { id: prop.id, headline: prop.headline, suburb: prop.suburb, state: prop.state, heroImageUrl: heroMap.get(prop.id) ?? null }
+          : null,
+      };
+    });
   }
 }

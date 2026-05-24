@@ -1,17 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Collection, CollectionWithProperties } from '@propsphere/types';
+import { store } from '@/store';
 
 interface NoteInput {
   collectionId: string;
   propertyId: string;
   notes: string;
 }
-import { supabase } from '@/lib/supabase';
 
 async function authFetch(url: string, options?: RequestInit): Promise<Response> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const session = store.getState().auth.session;
   return fetch(url, {
     ...options,
     headers: {
@@ -36,12 +34,13 @@ async function fetchCollectionProperties(collectionId: string): Promise<Collecti
   return json.data;
 }
 
-export function useCollections(options?: { enabled?: boolean }) {
+export function useCollections(options?: { enabled?: boolean; refetchOnMount?: boolean | 'always' }) {
   return useQuery({
     queryKey: ['collections'],
     queryFn: fetchCollections,
     staleTime: 30_000,
     enabled: options?.enabled ?? true,
+    refetchOnMount: options?.refetchOnMount ?? true,
   });
 }
 
@@ -51,6 +50,7 @@ export function useCollectionProperties(collectionId: string | null) {
     queryFn: () => fetchCollectionProperties(collectionId!),
     enabled: !!collectionId,
     staleTime: 30_000,
+    refetchOnMount: 'always',
   });
 }
 
