@@ -154,6 +154,7 @@ export function useAgentStats() {
     queryKey: ['agent', 'stats'],
     queryFn: async () => {
       const res = await authFetch('/api/agents/me/stats');
+      if (res.status === 404) return { activeListings: 0, enquiriesToday: 0, totalViews: 0 };
       if (!res.ok) throw new Error('Failed to fetch stats');
       const json = (await res.json()) as { data: AgentStats };
       return json.data;
@@ -169,6 +170,7 @@ export function useAgentListings(status?: string) {
       const params = new URLSearchParams();
       if (status) params.set('status', status);
       const res = await authFetch(`/api/agents/me/listings?${params.toString()}`);
+      if (res.status === 404) return [] as AgentListing[];
       if (!res.ok) throw new Error('Failed to fetch listings');
       const json = (await res.json()) as { data: AgentListing[] };
       return json.data;

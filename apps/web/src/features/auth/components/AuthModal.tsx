@@ -5,9 +5,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, ArrowLeft } from 'lucide-react';
+import type { Profile } from '@propsphere/types';
 import { supabase } from '@/lib/supabase';
 import { useAppDispatch } from '@/store/hooks';
-import { setSession } from '@/features/auth/store/authSlice';
+import { setSession, setUser } from '@/features/auth/store/authSlice';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -126,18 +127,32 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
       password: values.password,
       options: { data: { full_name: values.fullName, role: dbRole } },
     });
-    setRegisterLoading(false);
-    if (error) { setApiError(error.message); return; }
-    if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        email: values.email,
-        full_name: values.fullName,
-        role: dbRole,
+    if (error) { setRegisterLoading(false); setApiError(error.message); return; }
+
+    if (data.session) {
+      // Use the backend (service-role client) to create/update the profile so RLS
+      // cannot silently block role assignment the way a client-side upsert would.
+      await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
+        body: JSON.stringify({ full_name: values.fullName, role: dbRole }),
       });
+      // Fetch the post-PATCH profile so Redux has the correct role before we navigate.
+      // onAuthStateChange may have already fetched the profile with the old/default role.
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.session.user.id)
+        .maybeSingle();
+      dispatch(setSession(data.session));
+      if (profile) dispatch(setUser(profile as Profile));
     }
+
+    setRegisterLoading(false);
     toast('Welcome to PropSphere!', 'success');
-    if (data.session) dispatch(setSession(data.session));
     onClose();
     navigate(ROLE_REDIRECT[selectedRole]);
   }

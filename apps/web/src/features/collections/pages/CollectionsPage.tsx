@@ -18,7 +18,7 @@ export default function CollectionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [noteValue, setNoteValue] = useState('');
 
-  const { data: collections = [], isLoading: loadingCollections } = useCollections();
+  const { data: collections = [], isLoading: loadingCollections } = useCollections({ refetchOnMount: 'always' });
   const { mutate: createCollection } = useCreateCollection();
   const { mutate: deleteCollection } = useDeleteCollection();
   const { mutate: removeFromCollection } = useRemoveFromCollection();
@@ -30,7 +30,7 @@ export default function CollectionsPage() {
     collections[0]?.id ??
     null;
 
-  const { data: activeCollection, isLoading: loadingProperties } =
+  const { data: activeCollection, isLoading: loadingProperties, isError: propertiesError } =
     useCollectionProperties(resolvedCollectionId);
 
   function handleCreateCollection() {
@@ -189,6 +189,10 @@ export default function CollectionsPage() {
 
         {loadingProperties ? (
           <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        ) : propertiesError ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-red-500 text-sm">Could not load properties. Please try again.</p>
+          </div>
         ) : properties.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <BookmarkX className="w-12 h-12 text-neutral-300 mb-4" />

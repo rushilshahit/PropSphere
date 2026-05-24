@@ -62,7 +62,8 @@ export function useMyOffers() {
     queryFn: async (): Promise<MyOfferItem[]> => {
       const res = await authFetch('/api/users/me/offers');
       if (!res.ok) throw new Error('Failed to fetch offers');
-      return res.json() as Promise<MyOfferItem[]>;
+      const json = await res.json() as { data: MyOfferItem[] };
+      return json.data;
     },
     staleTime: 60_000,
   });

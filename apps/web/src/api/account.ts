@@ -54,7 +54,8 @@ export function useMyEnquiries() {
     queryFn: async (): Promise<EnquiryHistoryItem[]> => {
       const res = await authFetch('/api/users/me/enquiries');
       if (!res.ok) throw new Error('Failed to fetch enquiries');
-      return res.json() as Promise<EnquiryHistoryItem[]>;
+      const json = await res.json() as { data: EnquiryHistoryItem[] };
+      return json.data;
     },
     staleTime: 60_000,
   });

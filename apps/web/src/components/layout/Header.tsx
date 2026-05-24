@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { ChevronDown, Clock, HandCoins, LayoutDashboard, List, LogOut, BookmarkCheck, MessageSquare, Search } from 'lucide-react';
+import { ChevronDown, Clock, HandCoins, LayoutDashboard, List, LogOut, BookmarkCheck, MessageSquare, PlusCircle, Search } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
 import { selectIsAgent, selectIsSeller } from '@/features/auth/store/authSlice';
@@ -8,7 +8,7 @@ import { AuthModal } from '@/features/auth/components/AuthModal';
 import { NotificationCentre } from '@/features/alerts/components/NotificationCentre';
 
 export function Header() {
-  const { user, session, isAuthenticated, signOut } = useAuth();
+  const { user, session, isAuthenticated, initialized, signOut } = useAuth();
   const isAgent = useAppSelector(selectIsAgent);
   const isSeller = useAppSelector(selectIsSeller);
   const location = useLocation();
@@ -21,10 +21,17 @@ export function Header() {
 
   useEffect(() => {
     const state = location.state as { requireAuth?: boolean } | null;
-    if (state?.requireAuth && !isAuthenticated) {
+    if (state?.requireAuth && !isAuthenticated && initialized) {
       setAuthModal({ open: true, mode: 'login' });
     }
-  }, [location.state, isAuthenticated]);
+  }, [location.state, isAuthenticated, initialized]);
+
+  // Close the modal the moment the user becomes authenticated (handles all login paths).
+  useEffect(() => {
+    if (isAuthenticated) {
+      setAuthModal((s) => ({ ...s, open: false }));
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -85,7 +92,7 @@ export function Header() {
 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-card shadow-card-hover py-1 z-50">
-                    {isAgent && (
+                    {(isAgent || isSeller) && (
                       <NavLink
                         to="/dashboard"
                         onClick={() => setDropdownOpen(false)}
@@ -93,6 +100,16 @@ export function Header() {
                       >
                         <LayoutDashboard className="w-4 h-4" />
                         Dashboard
+                      </NavLink>
+                    )}
+                    {(isSeller || isAgent) && (
+                      <NavLink
+                        to="/post-property"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/5"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        Post Property
                       </NavLink>
                     )}
                     {isSeller && (

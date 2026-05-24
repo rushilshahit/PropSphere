@@ -7,6 +7,10 @@ import {
   type CreateOwnerListingDto,
 } from './dto/create-owner-listing.dto';
 import {
+  createInspectionsSchema,
+  type CreateInspectionsDto,
+} from './dto/create-inspections.dto';
+import {
   updateOwnerListingStatusSchema,
   type UpdateOwnerListingStatusDto,
 } from './dto/update-owner-listing-status.dto';
@@ -38,6 +42,11 @@ export class OwnerListingsController {
     return this.ownerListingsService.findMine(user.id);
   }
 
+  @Get('me/stats')
+  getDashboardStats(@CurrentUser() user: AuthUser) {
+    return this.ownerListingsService.getDashboardStats(user.id);
+  }
+
   @Get('active-count')
   getActiveCount(@CurrentUser() user: AuthUser) {
     return this.ownerListingsService.getActiveCount(user.id);
@@ -60,6 +69,15 @@ export class OwnerListingsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.ownerListingsService.update(id, dto, user.id);
+  }
+
+  @Post(':id/inspections')
+  createInspections(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createInspectionsSchema)) dto: CreateInspectionsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.ownerListingsService.createInspections(id, dto, user.id);
   }
 
   @Patch(':id/status')

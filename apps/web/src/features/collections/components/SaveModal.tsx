@@ -26,6 +26,9 @@ export function SaveModal({ propertyId, isOpen, onClose }: SaveModalProps) {
   const [showNewInput, setShowNewInput] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Auto-expand the new-collection input when the user has no collections yet
+  const hasNoCollections = !isLoading && collections.length === 0;
+
   if (!isOpen) return null;
 
   const defaultCollection = collections.find((c) => c.is_default) ?? collections[0] ?? null;
@@ -36,7 +39,7 @@ export function SaveModal({ propertyId, isOpen, onClose }: SaveModalProps) {
     let collectionId = activeCollectionId;
 
     try {
-      if (showNewInput && newCollectionName.trim()) {
+      if ((showNewInput || hasNoCollections) && newCollectionName.trim()) {
         const newCollection = await createCollection(newCollectionName.trim());
         collectionId = newCollection.id;
       }
@@ -95,7 +98,7 @@ export function SaveModal({ propertyId, isOpen, onClose }: SaveModalProps) {
                 </label>
               ))}
 
-              {showNewInput ? (
+              {(showNewInput || hasNoCollections) ? (
                 <div className="flex items-center gap-2 p-3 rounded-btn border border-brand-primary bg-brand-primary/5">
                   <Plus className="w-4 h-4 text-brand-primary flex-shrink-0" />
                   <input
@@ -103,7 +106,7 @@ export function SaveModal({ propertyId, isOpen, onClose }: SaveModalProps) {
                     type="text"
                     value={newCollectionName}
                     onChange={(e) => setNewCollectionName(e.target.value)}
-                    placeholder="Collection name"
+                    placeholder="Collection name (e.g. My Saved)"
                     className="flex-1 text-sm bg-transparent focus:outline-none text-neutral-800 placeholder-neutral-400"
                     onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                   />

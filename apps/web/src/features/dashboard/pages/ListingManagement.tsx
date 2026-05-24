@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { formatPrice } from '@propsphere/utils';
 import { useAgentListings, useUpdateListingStatus } from '@/api/agents';
+import { useMyOwnerListings, useUpdateOwnerListingStatus } from '@/api/owner-listings';
 import { Skeleton, Button } from '@/components/ui';
 
 const STATUS_TABS = [
@@ -33,13 +34,43 @@ function TableSkeleton() {
   );
 }
 
+interface CombinedListing {
+  id: string;
+  source: 'agent' | 'owner';
+  headline: string | null;
+  suburb: string;
+  state: string;
+  postcode: string;
+  status: string;
+  listing_type: string;
+  price: number | null;
+  price_display: string | null;
+  published_at: string | null;
+  created_at: string;
+}
+
 export default function ListingManagement() {
   const [activeStatus, setActiveStatus] = useState<string | undefined>(undefined);
-  const { data: listings, isLoading } = useAgentListings(activeStatus);
-  const updateStatus = useUpdateListingStatus();
+  const { data: agentListings, isLoading: agentLoading } = useAgentListings(activeStatus);
+  const { data: ownerListings, isLoading: ownerLoading } = useMyOwnerListings();
+  const updateAgentStatus = useUpdateListingStatus();
+  const updateOwnerStatus = useUpdateOwnerListingStatus();
 
-  function handleStatusChange(id: string, status: string) {
-    updateStatus.mutate({ id, status });
+  const isLoading = agentLoading || ownerLoading;
+
+  const listings: CombinedListing[] = [
+    ...(agentListings?.map((l) => ({ ...l, source: 'agent' as const })) ?? []),
+    ...(ownerListings
+      ?.filter((l) => !activeStatus || l.status === activeStatus)
+      .map((l) => ({ ...l, source: 'owner' as const })) ?? []),
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  function handleStatusChange(id: string, status: string, source: 'agent' | 'owner') {
+    if (source === 'owner') {
+      updateOwnerStatus.mutate({ id, status });
+    } else {
+      updateAgentStatus.mutate({ id, status });
+    }
   }
 
   return (
@@ -77,7 +108,7 @@ export default function ListingManagement() {
 
       {isLoading && <TableSkeleton />}
 
-      {!isLoading && listings && listings.length === 0 && (
+      {!isLoading && listings.length === 0 && (
         <div className="text-center py-16 text-neutral-400">
           No listings found.{' '}
           <Link to="/dashboard/listings/new" className="text-brand-primary hover:underline">
@@ -86,7 +117,7 @@ export default function ListingManagement() {
         </div>
       )}
 
-      {!isLoading && listings && listings.length > 0 && (
+      {!isLoading && listings.length > 0 && (
         <div className="bg-white rounded-card shadow-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -100,64 +131,77 @@ export default function ListingManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
-              {listings.map((listing) => (
-                <tr key={listing.id} className="hover:bg-neutral-50/50 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-neutral-900 line-clamp-1">
-                      {listing.headline ?? `${listing.suburb}, ${listing.state.toUpperCase()}`}
-                    </p>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      {listing.suburb}, {listing.state.toUpperCase()} {listing.postcode}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600 capitalize">
-                    {listing.listing_type}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-neutral-900 tabular-nums">
-                    {listing.price ? formatPrice(listing.price) : listing.price_display ?? '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                        STATUS_BADGE[listing.status] ?? 'bg-neutral-100 text-neutral-600'
-                      }`}
-                    >
-                      {listing.status.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-500">
-                    {listing.published_at
-                      ? new Date(listing.published_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {listing.status === 'active' && (
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(listing.id, 'withdrawn')}
-                        disabled={updateStatus.isPending}
-                        className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+              {listings.map((listing) => {
+                const isPending =
+                  listing.source === 'owner'
+                    ? updateOwnerStatus.isPending
+                    : updateAgentStatus.isPending;
+                return (
+                  <tr key={`${listing.source}-${listing.id}`} className="hover:bg-neutral-50/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-neutral-900 line-clamp-1">
+                          {listing.headline ?? `${listing.suburb}, ${listing.state.toUpperCase()}`}
+                        </p>
+                        {listing.source === 'owner' && (
+                          <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                            Owner
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        {listing.suburb}, {listing.state.toUpperCase()} {listing.postcode}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-neutral-600 capitalize">
+                      {listing.listing_type}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-neutral-900 tabular-nums">
+                      {listing.price ? formatPrice(listing.price) : listing.price_display ?? '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                          STATUS_BADGE[listing.status] ?? 'bg-neutral-100 text-neutral-600'
+                        }`}
                       >
-                        Withdraw
-                      </button>
-                    )}
-                    {listing.status === 'draft' && (
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(listing.id, 'active')}
-                        disabled={updateStatus.isPending}
-                        className="text-xs text-brand-primary hover:text-brand-primary/80 disabled:opacity-50"
-                      >
-                        Publish
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                        {listing.status.replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-neutral-500">
+                      {listing.published_at
+                        ? new Date(listing.published_at).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {listing.status === 'active' && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(listing.id, 'withdrawn', listing.source)}
+                          disabled={isPending}
+                          className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+                        >
+                          Withdraw
+                        </button>
+                      )}
+                      {listing.status === 'draft' && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(listing.id, 'active', listing.source)}
+                          disabled={isPending}
+                          className="text-xs text-brand-primary hover:text-brand-primary/80 disabled:opacity-50"
+                        >
+                          Publish
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
