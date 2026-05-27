@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Eye, MessageSquare, HandCoins, ArrowUpDown } from 'lucide-react';
 import { useAgentAnalytics, type AnalyticsListing } from '@/api/agents';
+import { useOwnerAnalytics } from '@/api/owner-listings';
+import { useAppSelector } from '@/store/hooks';
+import { selectIsAgent } from '@/features/auth/store/authSlice';
 import { Skeleton } from '@/components/ui';
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -73,7 +76,10 @@ function buildTrendData(listings: AnalyticsListing[]) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const { data, isLoading, isError } = useAgentAnalytics();
+  const isAgent = useAppSelector(selectIsAgent);
+  const agentAnalytics = useAgentAnalytics({ enabled: isAgent });
+  const ownerAnalytics = useOwnerAnalytics();
+  const { data, isLoading, isError } = isAgent ? agentAnalytics : ownerAnalytics;
   const navigate = useNavigate();
   const [sortKey, setSortKey] = useState<SortKey>('view_count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');

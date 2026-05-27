@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAgentEnquiries } from '@/api/agents';
+import { useOwnerEnquiries } from '@/api/owner-listings';
+import { useAppSelector } from '@/store/hooks';
+import { selectIsAgent } from '@/features/auth/store/authSlice';
 import { Skeleton } from '@/components/ui';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -22,7 +25,10 @@ function TableSkeleton() {
 
 export default function EnquiriesInbox() {
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useAgentEnquiries(page);
+  const isAgent = useAppSelector(selectIsAgent);
+  const agentEnquiries = useAgentEnquiries(page, { enabled: isAgent });
+  const ownerEnquiries = useOwnerEnquiries(page);
+  const { data, isLoading } = isAgent ? agentEnquiries : ownerEnquiries;
 
   const enquiries = data?.items ?? [];
   const totalPages = data?.totalPages ?? 1;

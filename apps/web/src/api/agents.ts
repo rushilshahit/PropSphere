@@ -163,7 +163,7 @@ export function useAgentStats() {
   });
 }
 
-export function useAgentListings(status?: string) {
+export function useAgentListings(status?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['agent', 'listings', status],
     queryFn: async () => {
@@ -176,6 +176,7 @@ export function useAgentListings(status?: string) {
       return json.data;
     },
     staleTime: 30_000,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -195,7 +196,7 @@ export function useUpdateListingStatus() {
   });
 }
 
-export function useAgentEnquiries(page = 1) {
+export function useAgentEnquiries(page = 1, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['agent', 'enquiries', page],
     queryFn: async () => {
@@ -205,6 +206,7 @@ export function useAgentEnquiries(page = 1) {
       return json.data;
     },
     staleTime: 30_000,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -257,7 +259,7 @@ export interface AgentAnalytics {
   listings: AnalyticsListing[];
 }
 
-export function useAgentAnalytics() {
+export function useAgentAnalytics(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['agent', 'analytics'],
     queryFn: async () => {
@@ -267,6 +269,7 @@ export function useAgentAnalytics() {
       return json.data;
     },
     staleTime: 5 * 60_000,
+    enabled: options?.enabled ?? true,
   });
 }
 

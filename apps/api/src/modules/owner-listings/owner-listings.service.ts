@@ -96,6 +96,24 @@ export class OwnerListingsService {
     };
   }
 
+  async findOne(id: string, userId: string) {
+    const { data, error } = await this.supabase.client
+      .from('properties')
+      .select(
+        'id, owner_id, status, headline, description, unit_number, street_number, street_name, suburb, state, postcode, lat, lng, bedrooms, bathrooms, car_spaces, land_size_sqm, build_size_sqm, price, price_min, price_max, price_display, is_price_hidden, listing_type, property_type, sale_method, features, auction_at, published_at, created_at',
+      )
+      .eq('id', id)
+      .eq('listing_source', 'owner')
+      .single();
+
+    if (error || !data) throw new NotFoundException('Listing not found');
+    if ((data as { owner_id: string }).owner_id !== userId) {
+      throw new ForbiddenException('Not your listing');
+    }
+
+    return data;
+  }
+
   async getActiveCount(userId: string) {
     const { count, error } = await this.supabase.client
       .from('properties')
@@ -139,6 +157,137 @@ export class OwnerListingsService {
       enquiry_count: p.enquiry_count ?? 0,
       days_listed: daysListed,
     };
+  }
+
+  async getAnalytics(userId: string) {
+    const { data: listings, error } = await this.supabase.client
+      .from('properties')
+      .select('id, headline, suburb, status, published_at, view_count, enquiry_count')
+      .eq('owner_id', userId)
+      .eq('listing_source', 'owner');
+
+    if (error) throw new BadRequestException(error.message);
+
+    const rows = (listings ?? []) as {
+      id: string;
+      headline: string | null;
+      suburb: string;
+      status: string;
+      published_at: string | null;
+      view_count: number | null;
+      enquiry_count: number | null;
+    }[];
+
+    const totalViews = rows.reduce((s, l) => s + (l.view_count ?? 0), 0);
+    const totalEnquiries = rows.reduce((s, l) => s + (l.enquiry_count ?? 0), 0);
+
+    let totalOffers = 0;
+    if (rows.length > 0) {
+      const { count } = await this.supabase.client
+        .from('offers')
+        .select('id', { count: 'exact', head: true })
+        .in('property_id', rows.map((r) => r.id));
+      totalOffers = count ?? 0;
+    }
+
+    const analyticsListings = rows.map((l) => {
+      const views = l.view_count ?? 0;
+      const enquiries = l.enquiry_count ?? 0;
+      const daysLive = l.published_at
+        ? Math.max(1, Math.ceil((Date.now() - new Date(l.published_at).getTime()) / 86_400_000))
+        : 0;
+      const enquiryRate = views > 0 ? Math.round((enquiries / views) * 1000) / 10 : 0;
+      return {
+        id: l.id,
+        headline: l.headline,
+        suburb: l.suburb,
+        status: l.status,
+        published_at: l.published_at,
+        view_count: views,
+        enquiry_count: enquiries,
+        enquiryRate,
+        daysLive,
+      };
+    });
+
+    const avgEnquiryRate =
+      analyticsListings.length > 0
+        ? Math.round(
+            (analyticsListings.reduce((s, l) => s + l.enquiryRate, 0) / analyticsListings.length) * 10,
+          ) / 10
+        : 0;
+
+    return { totalViews, totalEnquiries, totalOffers, avgEnquiryRate, listings: analyticsListings };
+  }
+
+  async getAllEnquiries(userId: string, page: number) {
+    const PAGE_SIZE = 20;
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, count, error } = await this.supabase.client
+      .from('enquiries')
+      .select('id, sender_name, sender_email, message, status, created_at, property_id', {
+        count: 'exact',
+      })
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw new BadRequestException(error.message);
+
+    const propertyIds = [
+      ...new Set(
+        (data ?? [])
+          .map((e: { property_id: string | null }) => e.property_id)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+
+    let propertiesMap: Record<string, { headline: string | null; suburb: string; state: string }> =
+      {};
+
+    if (propertyIds.length > 0) {
+      const { data: props } = await this.supabase.client
+        .from('properties')
+        .select('id, headline, suburb, state')
+        .in('id', propertyIds);
+
+      for (const prop of (props ?? []) as {
+        id: string;
+        headline: string | null;
+        suburb: string;
+        state: string;
+      }[]) {
+        propertiesMap[prop.id] = { headline: prop.headline, suburb: prop.suburb, state: prop.state };
+      }
+    }
+
+    const total = count ?? 0;
+    const items = (
+      data as {
+        id: string;
+        sender_name: string;
+        sender_email: string;
+        message: string;
+        status: string;
+        created_at: string;
+        property_id: string | null;
+      }[]
+    ).map((e) => ({
+      id: e.id,
+      sender_name: e.sender_name,
+      sender_email: e.sender_email,
+      message: e.message,
+      status: e.status,
+      created_at: e.created_at,
+      property:
+        e.property_id && propertiesMap[e.property_id]
+          ? { id: e.property_id, ...propertiesMap[e.property_id] }
+          : null,
+    }));
+
+    return { items, total, totalPages: Math.ceil(total / PAGE_SIZE) };
   }
 
   async getEnquiries(id: string, userId: string) {
