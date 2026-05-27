@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -47,9 +47,24 @@ export class OwnerListingsController {
     return this.ownerListingsService.getDashboardStats(user.id);
   }
 
+  @Get('me/analytics')
+  getAnalytics(@CurrentUser() user: AuthUser) {
+    return this.ownerListingsService.getAnalytics(user.id);
+  }
+
+  @Get('me/enquiries')
+  getAllEnquiries(@CurrentUser() user: AuthUser, @Query('page') page?: string) {
+    return this.ownerListingsService.getAllEnquiries(user.id, parseInt(page ?? '1', 10));
+  }
+
   @Get('active-count')
   getActiveCount(@CurrentUser() user: AuthUser) {
     return this.ownerListingsService.getActiveCount(user.id);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.ownerListingsService.findOne(id, user.id);
   }
 
   @Get(':id/stats')

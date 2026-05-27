@@ -24,8 +24,8 @@ const schema = z.object({
   suburb: z.string().min(1, 'Required'),
   state: z.string().min(1, 'Required'),
   postcode: z.string().min(4, 'Required').max(10),
-  lat: z.number(),
-  lng: z.number(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
   bedrooms: z.number().int().min(0),
   bathrooms: z.number().int().min(0),
   car_spaces: z.number().int().min(0),
@@ -71,7 +71,7 @@ const STEPS = ['Type', 'Location', 'Details', 'Description', 'Photos', 'Inspecti
 
 const STEP_FIELDS: Record<number, (keyof FormValues)[]> = {
   0: ['listing_type', 'property_type'],
-  1: ['street_number', 'street_name', 'suburb', 'state', 'postcode'],
+  1: ['street_number', 'street_name', 'suburb', 'state', 'postcode', 'lat', 'lng'],
   2: ['bedrooms', 'bathrooms'],
   3: ['headline', 'description'],
   4: [],
@@ -301,7 +301,14 @@ export default function PostPropertyPage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }}
+      >
         <div className="bg-white rounded-card shadow-card p-6">
 
           {/* ── Step 0: Type ─────────────────────────────────────────── */}
@@ -422,11 +429,43 @@ export default function PostPropertyPage() {
                   {errors.postcode && <p className={errCls}>{errors.postcode.message}</p>}
                 </div>
               </div>
-              {geocoding && (
-                <div className="flex items-center gap-2 text-xs text-neutral-400">
-                  <Spinner size="sm" /> Locating on map…
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelCls} style={{ marginBottom: 0 }}>Coordinates</label>
+                  {geocoding && (
+                    <span className="flex items-center gap-1 text-xs text-neutral-400">
+                      <Spinner size="sm" /> Auto-locating…
+                    </span>
+                  )}
                 </div>
-              )}
+                <p className="text-xs text-neutral-400 mb-2">
+                  Auto-filled from address above — override manually if needed.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Latitude *</label>
+                    <input
+                      {...register('lat', { valueAsNumber: true })}
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 23.0225"
+                      className={inputCls}
+                    />
+                    {errors.lat && <p className={errCls}>{errors.lat.message}</p>}
+                  </div>
+                  <div>
+                    <label className={labelCls}>Longitude *</label>
+                    <input
+                      {...register('lng', { valueAsNumber: true })}
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 72.5714"
+                      className={inputCls}
+                    />
+                    {errors.lng && <p className={errCls}>{errors.lng.message}</p>}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

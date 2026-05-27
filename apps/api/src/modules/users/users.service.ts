@@ -90,6 +90,15 @@ export class UsersService {
     }
   }
 
+  async clearRecentlyViewed(userId: string): Promise<void> {
+    const { error } = await this.supabase.client
+      .from('recently_viewed')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) throw new BadRequestException(error.message);
+  }
+
   async getRecentlyViewed(userId: string): Promise<{ propertyId: string; viewedAt: string }[]> {
     const { data, error } = await this.supabase.client
       .from('recently_viewed')
@@ -110,6 +119,7 @@ export class UsersService {
       .from('enquiries')
       .select('id, message, created_at, status, property_id')
       .eq('sender_id', userId)
+      .not('property_id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(50);
 

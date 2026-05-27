@@ -1,6 +1,6 @@
 import { Clock, History } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { useRecentlyViewed } from '@/api/account';
+import { useClearRecentlyViewed, useRecentlyViewed } from '@/api/account';
 import { useBatchProperties } from '@/api/properties';
 import { PropertyCard } from '@/features/search/components/PropertyCard';
 import { Spinner } from '@/components/ui';
@@ -22,11 +22,17 @@ function useRecentlyViewedProperties() {
 }
 
 export default function RecentlyViewedPage() {
+  const { user } = useAuth();
   const { properties, allIds, isLoading } = useRecentlyViewedProperties();
+  const clearRecentlyViewed = useClearRecentlyViewed();
 
   function handleClearHistory() {
     localStorage.removeItem('rv');
-    window.location.reload();
+    if (user) {
+      clearRecentlyViewed.mutate();
+    } else {
+      window.location.reload();
+    }
   }
 
   return (

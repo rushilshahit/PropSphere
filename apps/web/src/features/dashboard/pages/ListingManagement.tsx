@@ -4,6 +4,8 @@ import { Plus } from 'lucide-react';
 import { formatPrice } from '@propsphere/utils';
 import { useAgentListings, useUpdateListingStatus } from '@/api/agents';
 import { useMyOwnerListings, useUpdateOwnerListingStatus } from '@/api/owner-listings';
+import { useAppSelector } from '@/store/hooks';
+import { selectIsAgent } from '@/features/auth/store/authSlice';
 import { Skeleton, Button } from '@/components/ui';
 
 const STATUS_TABS = [
@@ -51,7 +53,8 @@ interface CombinedListing {
 
 export default function ListingManagement() {
   const [activeStatus, setActiveStatus] = useState<string | undefined>(undefined);
-  const { data: agentListings, isLoading: agentLoading } = useAgentListings(activeStatus);
+  const isAgent = useAppSelector(selectIsAgent);
+  const { data: agentListings, isLoading: agentLoading } = useAgentListings(activeStatus, { enabled: isAgent });
   const { data: ownerListings, isLoading: ownerLoading } = useMyOwnerListings();
   const updateAgentStatus = useUpdateListingStatus();
   const updateOwnerStatus = useUpdateOwnerListingStatus();
@@ -80,7 +83,7 @@ export default function ListingManagement() {
           <h1 className="text-2xl font-bold text-neutral-900">Listings</h1>
           <p className="text-sm text-neutral-500 mt-0.5">Manage your property listings</p>
         </div>
-        <Link to="/dashboard/listings/new">
+        <Link to="/post-property">
           <Button className="flex items-center gap-1.5">
             <Plus className="w-4 h-4" />
             Create listing
@@ -111,7 +114,7 @@ export default function ListingManagement() {
       {!isLoading && listings.length === 0 && (
         <div className="text-center py-16 text-neutral-400">
           No listings found.{' '}
-          <Link to="/dashboard/listings/new" className="text-brand-primary hover:underline">
+          <Link to="/post-property" className="text-brand-primary hover:underline">
             Create your first listing.
           </Link>
         </div>
@@ -178,26 +181,36 @@ export default function ListingManagement() {
                         : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      {listing.status === 'active' && (
-                        <button
-                          type="button"
-                          onClick={() => handleStatusChange(listing.id, 'withdrawn', listing.source)}
-                          disabled={isPending}
-                          className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-                        >
-                          Withdraw
-                        </button>
-                      )}
-                      {listing.status === 'draft' && (
-                        <button
-                          type="button"
-                          onClick={() => handleStatusChange(listing.id, 'active', listing.source)}
-                          disabled={isPending}
-                          className="text-xs text-brand-primary hover:text-brand-primary/80 disabled:opacity-50"
-                        >
-                          Publish
-                        </button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {listing.source === 'owner' && (
+                          <Link
+                            to={`/dashboard/listings/${listing.id}/edit`}
+                            className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
+                          >
+                            Edit
+                          </Link>
+                        )}
+                        {listing.status === 'active' && (
+                          <button
+                            type="button"
+                            onClick={() => handleStatusChange(listing.id, 'withdrawn', listing.source)}
+                            disabled={isPending}
+                            className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+                          >
+                            Withdraw
+                          </button>
+                        )}
+                        {listing.status === 'draft' && (
+                          <button
+                            type="button"
+                            onClick={() => handleStatusChange(listing.id, 'active', listing.source)}
+                            disabled={isPending}
+                            className="text-xs text-brand-primary hover:text-brand-primary/80 disabled:opacity-50"
+                          >
+                            Publish
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

@@ -9,7 +9,7 @@ import {
   setUser,
 } from '@/features/auth/store/authSlice';
 import { setSavedIds } from '@/features/collections/store/collectionsSlice';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase'; 
 
 // All API calls use the Vite proxy (/api → localhost:3001) to avoid CORS issues
 // with direct cross-origin requests and to use the service-role key on the backend.
