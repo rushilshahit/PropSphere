@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
@@ -42,6 +42,11 @@ export class UsersController {
   @Get('recently-viewed')
   getRecentlyViewed(@Req() req: AuthRequest) {
     return this.usersService.getRecentlyViewed(req.user.id);
+  }
+
+  @Delete('recently-viewed')
+  clearRecentlyViewed(@Req() req: AuthRequest) {
+    return this.usersService.clearRecentlyViewed(req.user.id);
   }
 
   @Get('me/enquiries')

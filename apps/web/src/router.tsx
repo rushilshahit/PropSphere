@@ -69,6 +69,10 @@ const AcceptInvitationPage = lazy(() => import('./features/owner-listing/pages/A
 
 const PostPropertyPage = lazy(() => import('./features/owner-listing/pages/PostPropertyPage'));
 
+const EditPropertyPage = lazy(() => import('./features/owner-listing/pages/EditPropertyPage'));
+
+const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage'));
+
 function StubPage({ label }: { label: string }) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 text-center text-neutral-400">
@@ -226,6 +230,10 @@ export const router = createBrowserRouter([
         path: 'accept-invitation/:token',
         element: <Page><AcceptInvitationPage /></Page>,
       },
+      {
+        path: 'reset-password',
+        element: <Page><ResetPasswordPage /></Page>,
+      },
       { path: 'account/*', element: <StubPage label="Account" /> },
       {
         path: 'dashboard',
@@ -242,6 +250,10 @@ export const router = createBrowserRouter([
           {
             path: 'listings',
             element: <Page><ListingManagement /></Page>,
+          },
+          {
+            path: 'listings/:id/edit',
+            element: <Page><EditPropertyPage /></Page>,
           },
           {
             path: 'enquiries',

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
 async function authFetch(url: string, options?: RequestInit): Promise<Response> {
@@ -32,6 +32,19 @@ export interface EnquiryHistoryItem {
     state: string;
     heroImageUrl: string | null;
   } | null;
+}
+
+export function useClearRecentlyViewed() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await authFetch('/api/users/recently-viewed', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to clear history');
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recently-viewed'] });
+    },
+  });
 }
 
 export function useRecentlyViewed(enabled: boolean) {
