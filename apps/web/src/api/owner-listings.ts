@@ -24,6 +24,38 @@ export interface OwnerListing {
   enquiry_count: number;
 }
 
+export interface OwnerListingDetail {
+  id: string;
+  status: string;
+  headline: string;
+  description: string;
+  unit_number: string | null;
+  street_number: string;
+  street_name: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  lat: number | null;
+  lng: number | null;
+  bedrooms: number;
+  bathrooms: number;
+  car_spaces: number | null;
+  land_size_sqm: number | null;
+  build_size_sqm: number | null;
+  price: number | null;
+  price_min: number | null;
+  price_max: number | null;
+  price_display: string | null;
+  is_price_hidden: boolean;
+  listing_type: string;
+  property_type: string;
+  sale_method: string | null;
+  features: string[];
+  auction_at: string | null;
+  published_at: string | null;
+  created_at: string;
+}
+
 export interface OwnerListingStats {
   view_count: number;
   enquiry_count: number;
@@ -87,6 +119,42 @@ export interface OwnerDashboardStats {
   totalViews: number;
 }
 
+export interface OwnerAnalyticsListing {
+  id: string;
+  headline: string | null;
+  suburb: string;
+  status: string;
+  published_at: string | null;
+  view_count: number;
+  enquiry_count: number;
+  enquiryRate: number;
+  daysLive: number;
+}
+
+export interface OwnerAnalytics {
+  totalViews: number;
+  totalEnquiries: number;
+  totalOffers: number;
+  avgEnquiryRate: number;
+  listings: OwnerAnalyticsListing[];
+}
+
+export interface OwnerEnquiryItem {
+  id: string;
+  sender_name: string;
+  sender_email: string;
+  message: string;
+  status: string;
+  created_at: string;
+  property: { id: string; headline: string | null; suburb: string; state: string } | null;
+}
+
+export interface OwnerEnquiriesResult {
+  items: OwnerEnquiryItem[];
+  total: number;
+  totalPages: number;
+}
+
 export function useOwnerDashboardStats() {
   return useQuery({
     queryKey: ['owner-listings', 'dashboard-stats'],
@@ -100,6 +168,32 @@ export function useOwnerDashboardStats() {
   });
 }
 
+export function useOwnerAnalytics() {
+  return useQuery({
+    queryKey: ['owner-listings', 'analytics'],
+    queryFn: async (): Promise<OwnerAnalytics> => {
+      const res = await authFetch('/api/owner-listings/me/analytics');
+      if (!res.ok) throw new Error('Failed to fetch analytics');
+      const json = (await res.json()) as { data: OwnerAnalytics };
+      return json.data;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useOwnerEnquiries(page = 1) {
+  return useQuery({
+    queryKey: ['owner-listings', 'enquiries', page],
+    queryFn: async (): Promise<OwnerEnquiriesResult> => {
+      const res = await authFetch(`/api/owner-listings/me/enquiries?page=${page}`);
+      if (!res.ok) throw new Error('Failed to fetch enquiries');
+      const json = (await res.json()) as { data: OwnerEnquiriesResult };
+      return json.data;
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function useMyOwnerListings() {
   return useQuery({
     queryKey: ['owner-listings', 'me'],
@@ -110,6 +204,42 @@ export function useMyOwnerListings() {
       return json.data;
     },
     staleTime: 30_000,
+  });
+}
+
+export function useOwnerListingDetail(id: string) {
+  return useQuery({
+    queryKey: ['owner-listings', id],
+    queryFn: async () => {
+      const res = await authFetch(`/api/owner-listings/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch listing');
+      const json = (await res.json()) as { data: OwnerListingDetail };
+      return json.data;
+    },
+    enabled: !!id,
+    staleTime: 30_000,
+  });
+}
+
+export function useUpdateOwnerListing(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: Partial<CreateOwnerListingInput>) => {
+      const res = await authFetch(`/api/owner-listings/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(dto),
+      });
+      if (!res.ok) {
+        const json = (await res.json()) as { message?: string | string[] };
+        const msg = Array.isArray(json.message) ? json.message[0] : (json.message ?? 'Failed to update listing');
+        throw new Error(msg);
+      }
+      const json = (await res.json()) as { data: { id: string } };
+      return json.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['owner-listings'] });
+    },
   });
 }
 
