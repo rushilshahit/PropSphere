@@ -9,6 +9,7 @@ import {
   FEATURES,
   type EditPropertyForm,
 } from '../hooks/useEditPropertyForm';
+import { PropertyImageManager } from '../components/PropertyImageManager';
 
 const inputCls =
   'w-full px-3 py-2 text-sm border border-neutral-200 rounded-btn focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary';
@@ -48,7 +49,7 @@ function Counter({ value, onChange }: { value: number; onChange: (v: number) => 
 
 export default function EditPropertyPage() {
   const navigate = useNavigate();
-  const { isLoading, isSaving, form, onSubmit } = useEditPropertyForm();
+  const { listing, isLoading, isSaving, form, onSubmit } = useEditPropertyForm();
   const { register, control, handleSubmit, watch, setValue, formState: { errors } } = form;
 
   const listingType = watch('listing_type');
@@ -315,6 +316,13 @@ export default function EditPropertyPage() {
           </label>
         </div>
       </Section>
+
+      {/* Photos */}
+      {listing && (
+        <Section title="Photos">
+          <PropertyImageManager propertyId={listing.id} />
+        </Section>
+      )}
 
       {/* Features */}
       <Section title="Features">

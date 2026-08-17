@@ -56,7 +56,6 @@ export const router = createBrowserRouter([
       { path: 'agencies/new', element: wrap(AgencyFormPage) },
       { path: 'agencies/:id/edit', element: wrap(AgencyFormPage) },
       { path: 'agents', element: wrap(AgentsPage) },
-      { path: 'agents/new', element: wrap(AgentFormPage) },
       { path: 'agents/:id/edit', element: wrap(AgentFormPage) },
       { path: 'users', element: wrap(UsersPage) },
       { path: 'users/:id', element: wrap(UserDetailPage) },

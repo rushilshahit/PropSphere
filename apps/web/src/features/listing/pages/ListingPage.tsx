@@ -190,21 +190,6 @@ export default function ListingPage() {
               <>
                 <InspectionTimes inspections={property.inspections} address={address} />
                 {property.auction_at && <AuctionCountdown auctionAt={property.auction_at} />}
-              </>
-            )}
-
-            <SoldHistory soldAt={property.sold_at} soldPrice={property.sold_price} />
-
-            {isSold && (
-              <>
-                <section>
-                  <h3 className="text-lg font-bold text-neutral-900 mb-4">Price History</h3>
-                  <PriceHistoryChart
-                    propertyId={property.id}
-                    currentPrice={property.sold_price ?? undefined}
-                  />
-                </section>
-
                 {property.agent_id && (
                   <AppraisalCTA
                     suburb={property.suburb}
@@ -213,6 +198,18 @@ export default function ListingPage() {
                   />
                 )}
               </>
+            )}
+
+            <SoldHistory soldAt={property.sold_at} soldPrice={property.sold_price} />
+
+            {isSold && (
+              <section>
+                <h3 className="text-lg font-bold text-neutral-900 mb-4">Price History</h3>
+                <PriceHistoryChart
+                  propertyId={property.id}
+                  currentPrice={property.sold_price ?? undefined}
+                />
+              </section>
             )}
 
             <SimilarProperties propertyId={property.id} />
@@ -257,13 +254,14 @@ export default function ListingPage() {
                   property={property}
                   isSaved={isSaved}
                   isAuthenticated={isAuthenticated}
+                  isOwner={isMyListing}
                   onEnquire={() => setEnquiryOpen(true)}
                   onSave={toggle}
                   onShare={handleShare}
                 />
               )}
 
-              {isOwnerListing ? (
+              {!isMyListing && (isOwnerListing ? (
                 <OwnerContactCard
                   ownerName={property.owner_name}
                   onEnquire={() => setEnquiryOpen(true)}
@@ -274,13 +272,13 @@ export default function ListingPage() {
                   agency={property.agency}
                   onEnquire={() => setEnquiryOpen(true)}
                 />
-              ) : null}
+              ) : null)}
             </div>
           </div>
         </div>
       </div>
 
-      {!isSold && (isOwnerListing || property.agent_id) && (
+      {!isSold && !isMyListing && (isOwnerListing || property.agent_id) && (
         <EnquiryModal
           propertyId={property.id}
           agentId={property.agent_id ?? undefined}
