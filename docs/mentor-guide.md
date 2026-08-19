@@ -147,7 +147,7 @@ Postgres tables deliberately have no foreign key constraints. Referential integr
 | `docs/naming-conventions.md` | Before creating any file |
 | `docs/database-schema.md` | Before any DB query or migration |
 | `docs/figma-prompt.md` | Before building any UI component |
-| `docs/vibe-coding_v2.md` | How to prompt Claude effectively |
+| `docs/vibe-coding.md` | How to prompt Claude effectively |
 | `docs/token-saving.md` | How to keep Claude sessions efficient |
 
 ---

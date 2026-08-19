@@ -47,8 +47,9 @@ Test files: `*.spec.ts` (unit), `*.e2e-spec.ts` (end-to-end).
 ```
 propsphere/
 ├── apps/
-│   ├── web/          # React 18 + Vite SPA
-│   └── api/          # NestJS 10 backend
+│   ├── web/          # React 18 + Vite SPA (public-facing site)
+│   ├── api/          # NestJS 10 backend
+│   └── admin/        # React 18 + Vite SPA (internal admin panel, role='admin' only)
 ├── packages/
 │   ├── types/        # Shared TypeScript interfaces — import as @propsphere/types
 │   ├── utils/        # Pure shared utilities — import as @propsphere/utils
@@ -199,6 +200,7 @@ PATCH /admin/agents/:id/approve flips to 'agent' + sends email
 
 | Doc | Contents |
 |---|---|
+| `docs/SKILL.md` | What Claude can do in this repo — read before starting any task |
 | `docs/PRD.md` | Product requirements |
 | `docs/database-schema.md` | Full PostgreSQL schema with enums and RLS |
 | `docs/folder-structure.md` | Complete directory tree |

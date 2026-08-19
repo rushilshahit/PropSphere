@@ -51,7 +51,7 @@ For a new session where Claude needs context:
 PropSphere is a real estate marketplace.
 Stack: React 18 + TS strict + Tailwind + Redux Toolkit + TanStack Query / NestJS + Supabase.
 Key files:
-- claude.md (project overview)
+- CLAUDE.md (project overview, repo root)
 - docs/folder-structure.md
 - .claude/coding-standards.md
 - .claude/design.md

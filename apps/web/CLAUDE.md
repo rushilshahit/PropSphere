@@ -14,31 +14,39 @@ React 18 + Vite SPA. No SSR. Entry: `src/main.tsx`. Routes: `src/router.tsx` (al
 
 ```
 src/
-├── api/              ← TanStack Query hooks (one file per domain)
+├── api/              ← TanStack Query hooks (one file per domain, 14 files)
 │   ├── properties.ts
 │   ├── agents.ts
 │   ├── collections.ts
 │   └── ...
 ├── components/
-│   └── ui/           ← Shared primitives (Button, Input, Badge, Card, Modal, Skeleton)
-├── features/         ← Feature modules (see layout below)
+│   └── ui/           ← Shared primitives (Badge, Button, Dropdown, Input, RangeSlider, Skeleton, Spinner, Tabs)
+├── features/         ← Feature modules (see layout below) — 17 total
+│   ├── home/
 │   ├── search/
 │   ├── listing/
 │   ├── map/
-│   ├── auth/
-│   ├── collections/
-│   ├── alerts/
+│   ├── sold/
 │   ├── suburb/
-│   ├── finance/
+│   ├── collections/
+│   ├── auth/
 │   ├── agent/
+│   ├── agency/
+│   ├── agent-signup/
+│   ├── owner-listing/
+│   ├── offers/
+│   ├── account/
+│   ├── alerts/
+│   ├── finance/
 │   └── dashboard/
-├── store/            ← Redux root store + slices
+├── store/            ← Redux root store setup only
 │   ├── index.ts
-│   ├── searchSlice.ts
-│   ├── mapSlice.ts
-│   └── authSlice.ts
+│   ├── rootReducer.ts
+│   └── hooks.ts      ← typed useAppDispatch/useAppSelector
 └── router.tsx        ← Route definitions
 ```
+
+Feature-owned Redux slices (`searchSlice.ts`, `mapSlice.ts`, `authSlice.ts`, plus a collections slice) live inside each feature's own `store/` folder (e.g. `features/search/store/searchSlice.ts`), not in the root `src/store/` — only `auth`, `collections`, `map`, and `search` currently have one. See `docs/folder-structure.md` for the full per-feature breakdown, including which features are new since this file was last written (`account`, `agency`, `agent-signup`, `home`, `offers`, `owner-listing`, `sold`).
 
 ---
 

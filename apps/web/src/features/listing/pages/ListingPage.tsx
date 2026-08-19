@@ -256,6 +256,7 @@ export default function ListingPage() {
                   isAuthenticated={isAuthenticated}
                   isOwner={isMyListing}
                   onEnquire={() => setEnquiryOpen(true)}
+                  onOffer={() => setOfferOpen(true)}
                   onSave={toggle}
                   onShare={handleShare}
                 />

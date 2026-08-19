@@ -5,10 +5,6 @@ import type { PropertyImage } from '@propsphere/types';
 import { GOOGLE_MAPS_API_KEY } from '@/lib/google-maps';
 import { StreetViewPanel } from './StreetViewPanel';
 
-function supabaseTransform(url: string, width: number): string {
-  return url.replace('/object/public/', '/render/image/public/') + `?width=${width}&format=webp`;
-}
-
 interface PhotoGalleryProps {
   images: PropertyImage[];
   virtualTourUrl?: string;
@@ -106,7 +102,7 @@ export function PhotoGallery({ images, virtualTourUrl, lat, lng }: PhotoGalleryP
                 <div className="absolute inset-0 bg-neutral-200 animate-pulse" />
               )}
               <img
-                src={supabaseTransform(mainImage.cdn_url, 1200)}
+                src={mainImage.cdn_url}
                 alt={mainImage.caption ?? 'Property photo'}
                 className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-300"
                 loading="eager"
@@ -138,7 +134,7 @@ export function PhotoGallery({ images, virtualTourUrl, lat, lng }: PhotoGalleryP
                     onClick={() => openLightbox(regularImages, i + 1)}
                   >
                     <img
-                      src={supabaseTransform(img.cdn_url, 400)}
+                      src={img.cdn_url}
                       alt={img.caption ?? `Photo ${i + 2}`}
                       className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                       loading="lazy"
@@ -158,7 +154,7 @@ export function PhotoGallery({ images, virtualTourUrl, lat, lng }: PhotoGalleryP
           <div className="lg:hidden">
             <div className="relative aspect-[4/3] overflow-hidden rounded-card">
               <img
-                src={supabaseTransform(mainImage.cdn_url, 1200)}
+                src={mainImage.cdn_url}
                 alt={mainImage.caption ?? 'Property photo'}
                 className="w-full h-full object-cover"
                 loading="eager"
@@ -189,7 +185,7 @@ export function PhotoGallery({ images, virtualTourUrl, lat, lng }: PhotoGalleryP
           {floorPlans.map((fp, i) => (
             <img
               key={fp.id}
-              src={supabaseTransform(fp.cdn_url, 1200)}
+              src={fp.cdn_url}
               alt={fp.caption ?? `Floor plan ${i + 1}`}
               className="w-full rounded-[8px] cursor-zoom-in"
               onClick={() => openLightbox(floorPlans, i)}
@@ -241,7 +237,7 @@ export function PhotoGallery({ images, virtualTourUrl, lat, lng }: PhotoGalleryP
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={supabaseTransform(lightboxImages[lightboxIndex].cdn_url, 1200)}
+              src={lightboxImages[lightboxIndex].cdn_url}
               alt={lightboxImages[lightboxIndex].caption ?? `Photo ${lightboxIndex + 1}`}
               className="max-h-[85vh] max-w-full object-contain mx-auto block"
             />

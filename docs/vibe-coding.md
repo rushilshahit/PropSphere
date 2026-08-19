@@ -1,5 +1,8 @@
-# Vibe Coding Guidelines
+# Vibe Coding Guidelines — v2
 ## How to Work with Claude on PropSphere
+
+> **v2 changes from v1:** Fixed all `.claude/` path references — those files live in `docs/`, not `.claude/`.
+> Updated "starting a session" instructions with correct paths.
 
 ---
 
@@ -26,10 +29,10 @@ Constraints: [Anything specific — types, APIs, no extra deps]
 ```
 
 **Good example:**
-> Context: Search feature  
-> File: `apps/web/src/features/search/components/FilterPanel.tsx`  
-> Task: Build the price range filter section — dual-handle slider + two manual input fields (min/max). Should dispatch to the `searchSlice` on change with 200ms debounce.  
-> Reference: Match the pattern in `searchSlice.ts`. Use `useAppDispatch`.  
+> Context: Search feature
+> File: `apps/web/src/features/search/components/FilterPanel.tsx`
+> Task: Build the price range filter section — dual-handle slider + two manual input fields (min/max). Should dispatch to the `searchSlice` on change with 200ms debounce.
+> Reference: Match the pattern in `searchSlice.ts`. Use `useAppDispatch`.
 > Constraints: No new dependencies. Use the `RangeSlider` primitive from `components/ui/`.
 
 **Bad example:**
@@ -42,10 +45,10 @@ Constraints: [Anything specific — types, APIs, no extra deps]
 At the start of a new Claude session, paste this:
 
 ```
-Read claude.md in the repo root. This is a real estate marketplace (PropSphere).
+Read CLAUDE.md in the repo root. This is a real estate marketplace (PropSphere).
 Stack: React 18 + TypeScript strict + TailwindCSS + Redux Toolkit + TanStack Query / NestJS + Supabase.
-Read .claude/coding-standards.md and .claude/design.md before generating any code.
-Current task: [paste from task.md]
+Read docs/coding-standards.md and docs/figma-prompt.md before generating any code.
+Current task: [paste from docs/task.md]
 ```
 
 ---
@@ -54,19 +57,22 @@ Current task: [paste from task.md]
 
 | When working on | Reference |
 |---|---|
-| Any UI component | `.claude/design.md` |
-| New NestJS module | `docs/folder-structure.md`, `.claude/coding-standards.md` |
+| Any UI component | `docs/figma-prompt.md` |
+| New NestJS module | `docs/folder-structure.md`, `docs/coding-standards.md` |
 | Database changes | `docs/database-schema.md` |
-| Search/filter logic | `docs/backend-prompt.md` (Typesense section) |
+| Search / filter logic | `docs/backend-prompt.md` (FTS section) |
 | New shared type | `packages/types/src/` (read first) |
 | New feature | `docs/folder-structure.md` (verify placement) |
+| Understanding architecture | `docs/architecture.md` |
+| Naming anything | `docs/naming-conventions.md` |
+| Git workflow | `docs/git-standards.md` |
 
 ---
 
 ## What to Ask Claude to Do (High Signal)
 
-- "Implement `usePropertySearch` hook following the pattern in `api/properties.ts`"
-- "Add a `GET /suburbs/autocomplete` endpoint to `SuburbsController` — returns top 5 suburb matches from Typesense"
+- "Implement `usePropertySearch` hook following the pattern in `src/api/properties.ts`"
+- "Add a `GET /suburbs/autocomplete` endpoint to `SuburbsController` — returns top 5 suburb matches using Postgres FTS"
 - "Build `AuctionCountdown.tsx` — displays countdown to `auction_at` timestamp, updates every second, hides when auction is past"
 - "Write a Zod schema for `CreatePropertyDto` matching the `properties` table columns in `docs/database-schema.md`"
 
@@ -76,7 +82,7 @@ Current task: [paste from task.md]
 - "Set up the backend"
 - "Make the app look nice"
 
-Break large work into tasks in `task.md`, then feed them one at a time.
+Break large work into tasks in `docs/task.md`, then feed them one at a time.
 
 ---
 
@@ -93,7 +99,7 @@ When Claude generates something that's almost right:
 ## When Claude Gets It Wrong
 
 If Claude introduces patterns that don't match the codebase:
-1. Point to the `.claude/coding-standards.md` rule it violated
+1. Point to the `docs/coding-standards.md` rule it violated
 2. Show the correct existing pattern from the codebase
 3. Ask it to redo just that part
 
@@ -101,7 +107,7 @@ If Claude introduces patterns that don't match the codebase:
 
 ## Token-Efficient Sessions
 
-See `.claude/token-saving.md` for full guidance. Summary:
+See `docs/token-saving.md` for full guidance. Summary:
 - Don't paste entire files when you only need to discuss a function
 - Use file paths + line ranges instead of pasting content
 - One task per session when possible — context switching wastes tokens
@@ -112,10 +118,10 @@ See `.claude/token-saving.md` for full guidance. Summary:
 
 Always:
 1. Read the generated code before running it
-2. Check types compile: `pnpm tsc --noEmit`
+2. Check types compile: `pnpm typecheck`
 3. Check lint: `pnpm lint`
 4. Run tests: `pnpm test`
-5. Update `task.md` to mark the task done
+5. Update `docs/task.md` to mark the task done
 
 ---
 
@@ -126,6 +132,8 @@ Stop and ask Claude to fix if you see:
 - `as` type assertion without a comment explaining why
 - Direct Supabase calls inside a React component
 - Inline styles on a React component
-- New npm package added without it being in `task.md` or explicitly requested
+- New npm package added without it being in `docs/task.md` or explicitly requested
 - Default export on a non-page component
 - `console.log` left in
+- FK constraints in a migration
+- Any reference to Typesense (the project uses Postgres FTS)

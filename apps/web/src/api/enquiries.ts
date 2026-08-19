@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CreateEnquiryInput } from '@propsphere/types';
 import { supabase } from '@/lib/supabase';
 
@@ -21,5 +21,11 @@ async function createEnquiry(data: CreateEnquiryInput): Promise<void> {
 }
 
 export function useCreateEnquiry() {
-  return useMutation({ mutationFn: createEnquiry });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createEnquiry,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['my-enquiries'] });
+    },
+  });
 }

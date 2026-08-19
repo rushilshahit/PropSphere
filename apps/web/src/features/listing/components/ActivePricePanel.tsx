@@ -9,6 +9,7 @@ interface ActivePricePanelProps {
   isAuthenticated: boolean;
   isOwner?: boolean;
   onEnquire: () => void;
+  onOffer?: () => void;
   onSave: () => void;
   onShare: () => void;
 }
@@ -24,6 +25,7 @@ export function ActivePricePanel({
   isAuthenticated,
   isOwner = false,
   onEnquire,
+  onOffer,
   onSave,
   onShare,
 }: ActivePricePanelProps) {
@@ -52,6 +54,11 @@ export function ActivePricePanel({
         {!isOwner && (
           <Button size="lg" className="w-full" onClick={onEnquire}>
             Enquire now
+          </Button>
+        )}
+        {!isOwner && onOffer && property.listing_type === 'buy' && property.agent_id && (
+          <Button variant="secondary" size="lg" className="w-full" onClick={onOffer}>
+            Make an offer
           </Button>
         )}
         {isAuthenticated && (
