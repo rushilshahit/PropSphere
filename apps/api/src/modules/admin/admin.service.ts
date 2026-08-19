@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Resend } from 'resend';
 
 import { SupabaseService } from '../../database/supabase.service';
 
@@ -12,7 +14,16 @@ interface AdminProfile {
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly supabase: SupabaseService) {}
+  private readonly resend: Resend;
+  private readonly fromEmail: string;
+
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly config: ConfigService,
+  ) {
+    this.resend = new Resend(this.config.get<string>('resend.apiKey'));
+    this.fromEmail = this.config.get<string>('resend.fromEmail') ?? 'PropSphere <noreply@propsphere.app>';
+  }
 
   // ── Audit ──────────────────────────────────────────────────────────────
   private async audit(actor: AdminProfile, action: string, target?: Record<string, unknown>) {
@@ -325,7 +336,7 @@ export class AdminService {
 
     const profileId = (agentRow as { profile_id: string }).profile_id;
 
-    await Promise.all([
+    const [, , { data: profile }] = await Promise.all([
       this.supabase.client
         .from('profiles')
         .update({ role: 'agent', pending_agent_since: null })
@@ -334,7 +345,81 @@ export class AdminService {
         .from('agents')
         .update({ is_active: true, is_verified: true, verified_at: new Date() })
         .eq('id', agentId),
+      this.supabase.client
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', profileId)
+        .single(),
     ]);
+
+    const agentName = (profile as { full_name: string | null; email: string } | null)?.full_name ?? 'there';
+    const agentEmail = (profile as { full_name: string | null; email: string } | null)?.email;
+
+    if (agentEmail) {
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 16px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+        <tr>
+          <td style="background:#1A56DB;padding:32px 40px">
+            <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff">PropSphere</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px">
+            <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827">Your agent account is approved!</h1>
+            <p style="margin:0 0 24px;font-size:16px;color:#6b7280">Hi ${agentName},</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6">
+              Great news — your application to become a PropSphere agent has been reviewed and approved.
+              You can now list properties, manage enquiries, and access your agent dashboard.
+            </p>
+            <table cellpadding="0" cellspacing="0" style="margin:0 0 32px">
+              <tr>
+                <td style="background:#f0fdf4;border-left:4px solid #16a34a;border-radius:4px;padding:16px 20px">
+                  <p style="margin:0;font-size:14px;font-weight:600;color:#15803d">What you can do now</p>
+                  <ul style="margin:8px 0 0;padding-left:20px;font-size:14px;color:#374151;line-height:1.8">
+                    <li>Create and publish property listings</li>
+                    <li>Receive and respond to enquiries from buyers and renters</li>
+                    <li>Track listing analytics from your dashboard</li>
+                    <li>Receive and manage offers on your listings</li>
+                  </ul>
+                </td>
+              </tr>
+            </table>
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#1A56DB;border-radius:8px;padding:14px 28px">
+                  <a href="https://propsphere.app/dashboard" style="color:#ffffff;font-size:15px;font-weight:600;text-decoration:none">Go to my dashboard →</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 40px;border-top:1px solid #f3f4f6">
+            <p style="margin:0;font-size:13px;color:#9ca3af">
+              Questions? Reply to this email or contact support at
+              <a href="mailto:support@propsphere.app" style="color:#1A56DB;text-decoration:none">support@propsphere.app</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+      await this.resend.emails.send({
+        from: this.fromEmail,
+        to: agentEmail,
+        subject: 'Your PropSphere agent account is approved',
+        text: `Hi ${agentName}, your PropSphere agent application has been approved. You can now log in and start listing properties at https://propsphere.app/dashboard`,
+        html,
+      });
+    }
 
     await this.audit(actor, 'agent.approve', { agentId, profileId });
     return { success: true };

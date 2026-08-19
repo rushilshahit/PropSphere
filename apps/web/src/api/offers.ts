@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
 export interface SubmitOfferPayload {
@@ -41,6 +41,7 @@ async function authFetch(url: string, options?: RequestInit): Promise<Response> 
 }
 
 export function useSubmitOffer() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (dto: SubmitOfferPayload) => {
       const res = await authFetch('/api/offers', {
@@ -52,6 +53,9 @@ export function useSubmitOffer() {
         throw new Error(err.message ?? 'Failed to submit offer');
       }
       return res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['my-offers'] });
     },
   });
 }

@@ -64,12 +64,9 @@ export default function AgentsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">Agents</h1>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleExport} loading={isExporting}>
-            Export CSV
-          </Button>
-          <Button onClick={() => navigate('/agents/new')}>+ New Agent</Button>
-        </div>
+        <Button variant="secondary" onClick={handleExport} loading={isExporting}>
+          Export CSV
+        </Button>
       </div>
 
       <Card className="p-0">

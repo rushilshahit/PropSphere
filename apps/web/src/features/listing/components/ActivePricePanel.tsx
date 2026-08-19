@@ -7,7 +7,9 @@ interface ActivePricePanelProps {
   property: PropertyDetail;
   isSaved: boolean;
   isAuthenticated: boolean;
+  isOwner?: boolean;
   onEnquire: () => void;
+  onOffer?: () => void;
   onSave: () => void;
   onShare: () => void;
 }
@@ -21,7 +23,9 @@ export function ActivePricePanel({
   property,
   isSaved,
   isAuthenticated,
+  isOwner = false,
   onEnquire,
+  onOffer,
   onSave,
   onShare,
 }: ActivePricePanelProps) {
@@ -47,9 +51,16 @@ export function ActivePricePanel({
       </p>
 
       <div className="flex flex-col gap-2">
-        <Button size="lg" className="w-full" onClick={onEnquire}>
-          Enquire now
-        </Button>
+        {!isOwner && (
+          <Button size="lg" className="w-full" onClick={onEnquire}>
+            Enquire now
+          </Button>
+        )}
+        {!isOwner && onOffer && property.listing_type === 'buy' && property.agent_id && (
+          <Button variant="secondary" size="lg" className="w-full" onClick={onOffer}>
+            Make an offer
+          </Button>
+        )}
         {isAuthenticated && (
           <Button variant="secondary" size="lg" className="w-full" onClick={onSave}>
             <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />

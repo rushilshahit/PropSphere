@@ -434,7 +434,14 @@ export function useDeclineInvitation() {
 
 const PROPERTY_MEDIA_BUCKET = 'property-media';
 
-export async function uploadListingImages(propertyId: string, files: File[]): Promise<void> {
+export interface PropertyImage {
+  id: string;
+  storage_path: string;
+  cdn_url: string;
+  sort_order: number;
+}
+
+export async function uploadListingImages(propertyId: string, files: File[], startOrder = 0): Promise<void> {
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const ext = file.name.split('.').pop() ?? 'jpg';
@@ -451,10 +458,56 @@ export async function uploadListingImages(propertyId: string, files: File[]): Pr
       property_id: propertyId,
       storage_path: path,
       cdn_url: publicUrl,
-      sort_order: i,
+      sort_order: startOrder + i,
     });
     if (insertErr) throw new Error(insertErr.message);
   }
+}
+
+export function useOwnerListingImages(propertyId: string) {
+  return useQuery({
+    queryKey: ['owner-listings', propertyId, 'images'],
+    queryFn: async (): Promise<PropertyImage[]> => {
+      const { data, error } = await supabase
+        .from('property_images')
+        .select('id, storage_path, cdn_url, sort_order')
+        .eq('property_id', propertyId)
+        .eq('is_floor_plan', false)
+        .order('sort_order');
+      if (error) throw new Error(error.message);
+      return (data ?? []) as PropertyImage[];
+    },
+    enabled: !!propertyId,
+    staleTime: 30_000,
+  });
+}
+
+export function useDeleteListingImage(propertyId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ imageId, storagePath }: { imageId: string; storagePath: string }) => {
+      const { error: storageErr } = await supabase.storage
+        .from(PROPERTY_MEDIA_BUCKET)
+        .remove([storagePath]);
+      if (storageErr) throw new Error(storageErr.message);
+      const { error: dbErr } = await supabase.from('property_images').delete().eq('id', imageId);
+      if (dbErr) throw new Error(dbErr.message);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['owner-listings', propertyId, 'images'] });
+    },
+  });
+}
+
+export function useUploadListingImages(propertyId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ files, startOrder }: { files: File[]; startOrder: number }) =>
+      uploadListingImages(propertyId, files, startOrder),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['owner-listings', propertyId, 'images'] });
+    },
+  });
 }
 
 export interface InspectionSlot {

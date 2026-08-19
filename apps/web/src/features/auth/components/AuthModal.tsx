@@ -12,6 +12,8 @@ import { setSession, setUser } from '@/features/auth/store/authSlice';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Input, Button } from '@/components/ui';
 import { RegisterRoleSelector, type SelectableRole } from './RegisterRoleSelector';
+import { AgencyPicker } from './AgencyPicker';
+import type { AgencySummary } from '@/api/agencies';
 
 interface AuthModalProps {
   mode: 'login' | 'register';
@@ -51,8 +53,9 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
   const { toast } = useToast();
 
   const [mode, setMode] = useState<'login' | 'register' | 'forgot-password'>(initialMode);
-  const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  const [registerStep, setRegisterStep] = useState<1 | 2 | 3>(1);
   const [selectedRole, setSelectedRole] = useState<SelectableRole>('buyer');
+  const [selectedAgency, setSelectedAgency] = useState<AgencySummary | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
@@ -65,6 +68,7 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
     setMode(initialMode);
     setRegisterStep(1);
     setSelectedRole('buyer');
+    setSelectedAgency(null);
     setApiError(null);
     setForgotSent(false);
   }, [initialMode, isOpen]);
@@ -84,6 +88,7 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
     setMode(next);
     setRegisterStep(1);
     setSelectedRole('buyer');
+    setSelectedAgency(null);
     setApiError(null);
     setForgotSent(false);
     loginForm.reset();
@@ -112,7 +117,13 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
-      options: { data: { full_name: values.fullName, role: dbRole } },
+      options: {
+        data: {
+          full_name: values.fullName,
+          role: dbRole,
+          ...(selectedAgency ? { agency_id: selectedAgency.id } : {}),
+        },
+      },
     });
     if (error) { setRegisterLoading(false); setApiError(error.message); return; }
 
@@ -272,23 +283,53 @@ export function AuthModal({ mode: initialMode, isOpen, onClose }: AuthModalProps
             <>
               <h2 className="text-xl font-bold text-neutral-900 mb-2">Create your account</h2>
               <p className="text-sm text-neutral-500 mb-6">I am a…</p>
-              <RegisterRoleSelector value={selectedRole} onChange={setSelectedRole} />
+              <RegisterRoleSelector value={selectedRole} onChange={(r) => { setSelectedRole(r); setSelectedAgency(null); }} />
               <Button
                 className="w-full mt-6"
-                onClick={() => { setApiError(null); setRegisterStep(2); }}
+                onClick={() => { setApiError(null); setRegisterStep(selectedRole === 'agent' ? 2 : 3); }}
               >
                 Continue
               </Button>
             </>
           )}
 
-          {/* ── Register step 2: details ──────────────────────── */}
+          {/* ── Register step 2: agency picker (agents only) ──── */}
           {mode === 'register' && registerStep === 2 && (
             <>
               <div className="flex items-center gap-3 mb-6">
                 <button
                   type="button"
                   onClick={() => setRegisterStep(1)}
+                  className="text-neutral-400 hover:text-neutral-600"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-xl font-bold text-neutral-900">Your agency</h2>
+              </div>
+              <p className="text-sm text-neutral-500 mb-4">Search and select the agency you work for.</p>
+              <AgencyPicker
+                selected={selectedAgency}
+                onSelect={setSelectedAgency}
+                onClear={() => setSelectedAgency(null)}
+              />
+              <Button
+                className="w-full mt-6"
+                disabled={!selectedAgency}
+                onClick={() => { setApiError(null); setRegisterStep(3); }}
+              >
+                Continue
+              </Button>
+            </>
+          )}
+
+          {/* ── Register step 3: details ──────────────────────── */}
+          {mode === 'register' && registerStep === 3 && (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setRegisterStep(selectedRole === 'agent' ? 2 : 1)}
                   className="text-neutral-400 hover:text-neutral-600"
                   aria-label="Back"
                 >
